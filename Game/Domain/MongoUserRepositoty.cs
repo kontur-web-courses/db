@@ -44,9 +44,9 @@ namespace Game.Domain
             userCollection.ReplaceOne(u => u.Id == user.Id, user);
         }
 
-        public void Delete(Guid id)
+        public void Delete(Guid userId)
         {
-            userCollection.DeleteOne(u => u.Id == id);
+            userCollection.DeleteOne(u => u.Id == userId);
         }
 
         // Для вывода списка всех пользователей (упорядоченных по логину)
