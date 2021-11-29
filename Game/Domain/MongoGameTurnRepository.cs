@@ -13,6 +13,7 @@ namespace Game.Domain
         public MongoGameTurnRepository(IMongoDatabase db)
         {
             gameTurnCollection = db.GetCollection<GameTurnEntity>(CollectionName);
+            gameTurnCollection.Indexes.CreateOne("{gameId: 1, time: -1}");
         }
         
         public GameTurnEntity Insert(GameTurnEntity gameTurn)
