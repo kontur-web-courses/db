@@ -9,6 +9,7 @@ namespace ConsoleApp
     {
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
+        private readonly IGameTurnRepository gameTurnRepo;
         private readonly Random random = new Random();
 
         private Program(string[] args)
@@ -16,8 +17,10 @@ namespace ConsoleApp
             var db = TestMongoDatabase.Create();
             //db.DropCollection(MongoGameRepository.CollectionName);
             //db.DropCollection(MongoUserRepository.CollectionName);
+            //db.DropCollection(MongoGameTurnRepository.CollectionName);
             userRepo = new MongoUserRepository(db);
             gameRepo = new MongoGameRepository(db);
+            gameTurnRepo = new MongoGameTurnRepository(db);
         }
 
         public static void Main(string[] args)
@@ -130,7 +133,8 @@ namespace ConsoleApp
             if (game.HaveDecisionOfEveryPlayer)
             {
                 // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var turn = game.FinishTurn();
+                gameTurnRepo.Insert(turn);
             }
 
             ShowScore(game);
@@ -185,6 +189,13 @@ namespace ConsoleApp
         {
             var players = game.Players;
             // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
+            var lastGames = gameTurnRepo.GetLastTurns(game.Id).OrderBy(t => t.TurnNumber);
+            Console.WriteLine(String.Join('\n', lastGames.Select(g =>
+            {
+                var winner = g.Winner == 0 ? "No one" : "Player" + g.Winner;
+                return $"Turn number {g.TurnNumber + 1}\nPlayer1 {g.Player1} played {g.Player1Decision}; Player2 {g.Player2} played {g.Player2Decision}\n{winner} won!!!";
+            })
+                .ToList()));
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
         }
     }
