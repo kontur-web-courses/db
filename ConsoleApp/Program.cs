@@ -15,7 +15,7 @@ namespace ConsoleApp
         {
             var db = TestMongoDatabase.Create();
             userRepo = new MongoUserRepository(db);
-            gameRepo = new InMemoryGameRepository();
+            gameRepo = new MongoGameRepository(db);
         }
 
         public static void Main(string[] args)
