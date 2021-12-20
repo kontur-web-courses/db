@@ -1,19 +1,25 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using MongoDB.Driver;
 
 namespace ConsoleApp
 {
     class Program
     {
-        private readonly IUserRepository userRepo;
-        private readonly IGameRepository gameRepo;
+        private readonly MongoUserRepository userRepo;
+        private readonly MongoGameRepository gameRepo;
         private readonly Random random = new Random();
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var mongoConnectionString = "mongodb+srv://kryaazh:test12345@cluster0.s6wbz.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+            var mongoClient = new MongoClient(mongoConnectionString);
+            var dbGame = mongoClient.GetDatabase("game");
+            var dbUsers = mongoClient.GetDatabase("users");
+
+            userRepo = new MongoUserRepository(dbUsers);
+            gameRepo = new MongoGameRepository(dbGame);
         }
 
         public static void Main(string[] args)

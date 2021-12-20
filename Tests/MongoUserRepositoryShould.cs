@@ -108,6 +108,7 @@ namespace Tests
         public void Delete()
         {
             var user = repo.GetOrCreateByLogin("login");
+            repo.FindById(user.Id).Should().NotBeNull();
             repo.Delete(user.Id);
             repo.FindById(user.Id).Should().BeNull();
         }
