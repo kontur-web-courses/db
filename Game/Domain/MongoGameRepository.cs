@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MongoDB.Driver;
 
 namespace Game.Domain
@@ -7,39 +8,49 @@ namespace Game.Domain
     // TODO Сделать по аналогии с MongoUserRepository
     public class MongoGameRepository : IGameRepository
     {
+        private readonly IMongoCollection<GameEntity> gamesCollection;
         public const string CollectionName = "games";
 
         public MongoGameRepository(IMongoDatabase db)
         {
+            gamesCollection = db.GetCollection<GameEntity>(CollectionName);
         }
 
         public GameEntity Insert(GameEntity game)
         {
-            throw new NotImplementedException();
+            gamesCollection.InsertOne(game);
+            return game;
         }
 
         public GameEntity FindById(Guid gameId)
         {
-            throw new NotImplementedException();
+            var cursor = gamesCollection.FindSync(Builders<GameEntity>.Filter.Eq(x => x.Id, gameId));
+            return cursor.SingleOrDefault();
         }
 
         public void Update(GameEntity game)
         {
-            throw new NotImplementedException();
+            gamesCollection.ReplaceOne(Builders<GameEntity>.Filter.Eq(x => x.Id, game.Id), game);
         }
 
         // Возвращает не более чем limit игр со статусом GameStatus.WaitingToStart
         public IList<GameEntity> FindWaitingToStart(int limit)
         {
-            //TODO: Используй Find и Limit
-            throw new NotImplementedException();
+            return gamesCollection.FindSync(FilterDefinition<GameEntity>.Empty)
+                .ToEnumerable()
+                .Where(x => x.Status == GameStatus.WaitingToStart)
+                .Take(limit)
+                .ToList();
         }
 
         // Обновляет игру, если она находится в статусе GameStatus.WaitingToStart
         public bool TryUpdateWaitingToStart(GameEntity game)
         {
-            //TODO: Для проверки успешности используй IsAcknowledged и ModifiedCount из результата
-            throw new NotImplementedException();
+            if (game.Status != GameStatus.WaitingToStart && game.Status != GameStatus.Playing || game.Players.Count < 1)
+                return false;
+            var updated = new GameEntity(game.Id, GameStatus.Playing, game.TurnsCount, game.CurrentTurnIndex, game.Players.ToList());
+            Update(updated);
+            return true;
         }
     }
 }
