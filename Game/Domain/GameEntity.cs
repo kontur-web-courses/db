@@ -32,7 +32,6 @@ namespace Game.Domain
             private set;
         }
 
-        [BsonElement]
         public IReadOnlyList<Player> Players => players.AsReadOnly();
 
         [BsonElement]
@@ -41,6 +40,8 @@ namespace Game.Domain
         public int CurrentTurnIndex { get; private set; }
 
         public GameStatus Status { get; private set; }
+
+        public bool HaveDecisionOfEveryPlayer => Players.All(p => p.Decision.HasValue);
 
         public void AddPlayer(UserEntity user)
         {
@@ -64,8 +65,6 @@ namespace Game.Domain
                 Status = GameStatus.Canceled;
         }
 
-        public bool HaveDecisionOfEveryPlayer => Players.All(p => p.Decision.HasValue);
-
         public void SetPlayerDecision(Guid userId, PlayerDecision decision)
         {
             if (Status != GameStatus.Playing)
@@ -81,7 +80,7 @@ namespace Game.Domain
         public GameTurnEntity FinishTurn()
         {
             var winnerId = Guid.Empty;
-            for (int i = 0; i < 2; i++)
+            for (var i = 0; i < 2; i++)
             {
                 var player = Players[i];
                 var opponent = Players[1 - i];
@@ -93,6 +92,7 @@ namespace Game.Domain
                     winnerId = player.UserId;
                 }
             }
+
             //TODO Заполнить все внутри GameTurnEntity, в том числе winnerId
             var result = new GameTurnEntity();
             // Это должно быть после создания GameTurnEntity

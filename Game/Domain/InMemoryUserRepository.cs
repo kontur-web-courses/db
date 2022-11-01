@@ -6,19 +6,13 @@ namespace Game.Domain
 {
     public class InMemoryUserRepository : IUserRepository
     {
-        private readonly Guid adminId = Guid.Parse("77777777-7777-7777-7777-777777777777");
         private const string AdminLogin = "Admin";
-        private readonly Dictionary<Guid, UserEntity> entities = new Dictionary<Guid, UserEntity>();
+        private readonly Guid adminId = Guid.Parse("77777777-7777-7777-7777-777777777777");
+        private readonly Dictionary<Guid, UserEntity> entities = new();
 
         public InMemoryUserRepository()
         {
             AddAdmin();
-        }
-
-        private void AddAdmin()
-        {
-            var user = new UserEntity(adminId, AdminLogin, "Halliday", "James", 999, null);
-            entities[user.Id] = user;
         }
 
         public UserEntity Insert(UserEntity user)
@@ -43,7 +37,7 @@ namespace Game.Domain
             if (existedUser != null)
                 return Clone(existedUser.Id, existedUser);
 
-            var user = new UserEntity {Login = login};
+            var user = new UserEntity { Login = login };
             var entity = Clone(Guid.NewGuid(), user);
             entities[entity.Id] = entity;
             return Clone(entity.Id, entity);
@@ -90,6 +84,12 @@ namespace Game.Domain
                 .Select(u => Clone(u.Id, u))
                 .ToList();
             return new PageList<UserEntity>(items, count, pageNumber, pageSize);
+        }
+
+        private void AddAdmin()
+        {
+            var user = new UserEntity(adminId, AdminLogin, "Halliday", "James", 999, null);
+            entities[user.Id] = user;
         }
 
         private UserEntity Clone(Guid id, UserEntity user)

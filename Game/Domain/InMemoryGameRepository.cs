@@ -6,7 +6,7 @@ namespace Game.Domain
 {
     public class InMemoryGameRepository : IGameRepository
     {
-        private readonly Dictionary<Guid, GameEntity> entities = new Dictionary<Guid, GameEntity>();
+        private readonly Dictionary<Guid, GameEntity> entities = new();
 
         public GameEntity Insert(GameEntity game)
         {

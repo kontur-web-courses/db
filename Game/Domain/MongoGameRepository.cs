@@ -8,8 +8,8 @@ namespace Game.Domain
     // TODO Сделать по аналогии с MongoUserRepository
     public class MongoGameRepository : IGameRepository
     {
-        private readonly IMongoCollection<GameEntity> gamesCollection;
         public const string CollectionName = "games";
+        private readonly IMongoCollection<GameEntity> gamesCollection;
 
         public MongoGameRepository(IMongoDatabase db)
         {
@@ -46,7 +46,7 @@ namespace Game.Domain
         // Обновляет игру, если она находится в статусе GameStatus.WaitingToStart
         public bool TryUpdateWaitingToStart(GameEntity game)
         {
-            if (game.Status != GameStatus.WaitingToStart && game.Status != GameStatus.Playing || game.Players.Count < 1)
+            if ((game.Status != GameStatus.WaitingToStart && game.Status != GameStatus.Playing) || game.Players.Count < 1)
                 return false;
             var updated = new GameEntity(game.Id, GameStatus.Playing, game.TurnsCount, game.CurrentTurnIndex, game.Players.ToList());
             Update(updated);

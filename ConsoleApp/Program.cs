@@ -5,11 +5,11 @@ using MongoDB.Driver;
 
 namespace ConsoleApp
 {
-    class Program
+    internal class Program
     {
-        private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
-        private readonly Random random = new Random();
+        private readonly Random random = new();
+        private readonly IUserRepository userRepo;
 
         private Program(string[] args)
         {
@@ -119,7 +119,7 @@ namespace ConsoleApp
                 return false;
             }
 
-            PlayerDecision? decision = AskHumanDecision();
+            var decision = AskHumanDecision();
             if (!decision.HasValue)
                 return false;
             game.SetPlayerDecision(humanUserId, decision.Value);
@@ -128,10 +128,8 @@ namespace ConsoleApp
             game.SetPlayerDecision(aiPlayer.UserId, GetAiDecision());
 
             if (game.HaveDecisionOfEveryPlayer)
-            {
                 // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
                 game.FinishTurn();
-            }
 
             ShowScore(game);
             gameRepo.Update(game);
