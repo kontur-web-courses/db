@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using MongoDB.Driver;
 
 namespace ConsoleApp
 {
@@ -12,8 +13,18 @@ namespace ConsoleApp
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            
+            
+            userRepo = new MongoUserRepository(Create());
+            gameRepo = new MongoGameRepository(Create());
+        }
+        
+        private static IMongoDatabase Create()
+        {
+            var mongoConnectionString = Environment.GetEnvironmentVariable("PROJECT5100_MONGO_CONNECTION_STRING")
+                                        ?? "mongodb://localhost:27017";
+            var mongoClient = new MongoClient(mongoConnectionString);
+            return mongoClient.GetDatabase("game-tests");
         }
 
         public static void Main(string[] args)
@@ -173,7 +184,7 @@ namespace ConsoleApp
                 if (key.KeyChar == '1') return PlayerDecision.Rock;
                 if (key.KeyChar == '2') return PlayerDecision.Scissors;
                 if (key.KeyChar == '3') return PlayerDecision.Paper;
-                if (key.Key == ConsoleKey.Escape) return null;
+                if (key.Key == ConsoleKey.A) return null;
             }
         }
 
