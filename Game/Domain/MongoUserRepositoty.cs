@@ -1,5 +1,7 @@
 using System;
+using System.Linq;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 namespace Game.Domain
 {
@@ -16,30 +18,38 @@ namespace Game.Domain
         public UserEntity Insert(UserEntity user)
         {
             //TODO: Ищи в документации InsertXXX.
-            throw new NotImplementedException();
+            userCollection.InsertOne(user);
+            return user;
         }
 
         public UserEntity FindById(Guid id)
         {
             //TODO: Ищи в документации FindXXX
-            throw new NotImplementedException();
+            return userCollection.Find(x => x.Id == id).FirstOrDefault();
         }
 
         public UserEntity GetOrCreateByLogin(string login)
         {
             //TODO: Это Find или Insert
-            throw new NotImplementedException();
+            var user = userCollection.Find(x => x.Login == login).FirstOrDefault();
+            if (user is null)
+            {
+                user = new() { Login = login };
+                userCollection.InsertOne(user);
+            }
+            return user;
+
         }
 
         public void Update(UserEntity user)
         {
             //TODO: Ищи в документации ReplaceXXX
-            throw new NotImplementedException();
+            userCollection.ReplaceOne(x => x.Id == user.Id, user);
         }
 
         public void Delete(Guid id)
         {
-            throw new NotImplementedException();
+            userCollection.DeleteOne(x => x.Id == id);
         }
 
         // Для вывода списка всех пользователей (упорядоченных по логину)
@@ -47,7 +57,15 @@ namespace Game.Domain
         public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
         {
             //TODO: Тебе понадобятся SortBy, Skip и Limit
-            throw new NotImplementedException();
+            return new PageList<UserEntity>(
+                userCollection
+                    .AsQueryable()
+                    .OrderBy(x => x.Login)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList(),
+                userCollection.CountDocuments(x => true),
+                pageNumber, pageSize);
         }
 
         // Не нужно реализовывать этот метод
