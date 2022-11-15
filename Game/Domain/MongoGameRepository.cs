@@ -7,15 +7,18 @@ namespace Game.Domain
     // TODO Сделать по аналогии с MongoUserRepository
     public class MongoGameRepository : IGameRepository
     {
+        private readonly IMongoCollection<GameEntity> gameCollection;
         public const string CollectionName = "games";
 
         public MongoGameRepository(IMongoDatabase db)
         {
+            gameCollection = db.GetCollection<GameEntity>(CollectionName);
         }
 
         public GameEntity Insert(GameEntity game)
         {
-            throw new NotImplementedException();
+            gameCollection.InsertOne(game);
+            return game;
         }
 
         public GameEntity FindById(Guid gameId)
@@ -31,7 +34,6 @@ namespace Game.Domain
         // Возвращает не более чем limit игр со статусом GameStatus.WaitingToStart
         public IList<GameEntity> FindWaitingToStart(int limit)
         {
-            //TODO: Используй Find и Limit
             throw new NotImplementedException();
         }
 
