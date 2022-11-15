@@ -13,6 +13,10 @@ namespace Game.Domain
         public MongoUserRepository(IMongoDatabase database)
         {
             userCollection = database.GetCollection<UserEntity>(CollectionName);
+            userCollection.Indexes.CreateOne(
+                new CreateIndexModel<UserEntity>(new IndexKeysDefinitionBuilder<UserEntity>().Ascending(x => x.Login),
+                new CreateIndexOptions() { Unique = true })
+            );
         }
 
         public UserEntity Insert(UserEntity user)
@@ -31,14 +35,9 @@ namespace Game.Domain
         public UserEntity GetOrCreateByLogin(string login)
         {
             //TODO: Это Find или Insert
-            var user = userCollection.Find(x => x.Login == login).FirstOrDefault();
-            if (user is null)
-            {
-                user = new() { Login = login };
-                userCollection.InsertOne(user);
-            }
-            return user;
-
+            return userCollection.FindOneAndUpdate<UserEntity>(x => x.Login == login,
+                new UpdateDefinitionBuilder<UserEntity>().SetOnInsert(x => x.Login, login).SetOnInsert(x => x.Id, Guid.NewGuid()),
+                new FindOneAndUpdateOptions<UserEntity> { ReturnDocument = ReturnDocument.After, IsUpsert = true });
         }
 
         public void Update(UserEntity user)
