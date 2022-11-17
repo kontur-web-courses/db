@@ -4,7 +4,6 @@ using MongoDB.Driver;
 
 namespace Game.Domain
 {
-    // TODO Сделать по аналогии с MongoUserRepository
     public class MongoGameRepository : IGameRepository
     {
         private readonly IMongoCollection<GameEntity> gameCollection;
@@ -23,25 +22,28 @@ namespace Game.Domain
 
         public GameEntity FindById(Guid gameId)
         {
-            throw new NotImplementedException();
+            return gameCollection.Find(x => x.Id == gameId).FirstOrDefault();
         }
 
         public void Update(GameEntity game)
         {
-            throw new NotImplementedException();
+            gameCollection.ReplaceOne(x => x.Id == game.Id, game);
         }
 
-        // Возвращает не более чем limit игр со статусом GameStatus.WaitingToStart
         public IList<GameEntity> FindWaitingToStart(int limit)
         {
-            throw new NotImplementedException();
+            return gameCollection.Find(x => x.Status == GameStatus.WaitingToStart).Limit(limit).ToList();
         }
 
-        // Обновляет игру, если она находится в статусе GameStatus.WaitingToStart
         public bool TryUpdateWaitingToStart(GameEntity game)
         {
-            //TODO: Для проверки успешности используй IsAcknowledged и ModifiedCount из результата
-            throw new NotImplementedException();
+            var g = gameCollection.Find(e => e.Id == game.Id).FirstOrDefault();
+            if (g is not { Status: GameStatus.WaitingToStart }) 
+                return false;
+            {
+                var result = gameCollection.ReplaceOne(e => e.Id == game.Id, game);
+                return result.IsAcknowledged && result.ModifiedCount > 0;
+            }
         }
     }
 }

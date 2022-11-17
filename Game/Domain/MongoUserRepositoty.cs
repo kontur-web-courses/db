@@ -58,11 +58,15 @@ namespace Game.Domain
             userCollection.DeleteOne(x => x.Id == id);
         }
 
-        // Для вывода списка всех пользователей (упорядоченных по логину)
-        // страницы нумеруются с единицы
         public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
         {
-            throw new NotImplementedException();
+            var entities = userCollection
+                .Find(_ => true)
+                .SortBy(u => u.Login)
+                .Skip((pageNumber - 1) * pageSize)
+                .Limit(pageSize)
+                .ToList();
+            return new PageList<UserEntity>(entities, userCollection.CountDocuments(_ => true), pageNumber, pageSize);
         }
 
         // Не нужно реализовывать этот метод
