@@ -24,8 +24,8 @@ namespace Tests
         {
             var players = new List<Player>
             {
-                new Player(Guid.NewGuid(), "name1") { Decision = PlayerDecision.Paper, Score = 42 },
-                new Player(Guid.NewGuid(), "name2") { Decision = PlayerDecision.Rock, Score = 40 }
+                new(Guid.NewGuid(), "name1") { Decision = PlayerDecision.Paper, Score = 42 },
+                new(Guid.NewGuid(), "name2") { Decision = PlayerDecision.Rock, Score = 40 }
             };
             var entity = new GameEntity(Guid.NewGuid(), GameStatus.Playing, 10, 2, players);
             AssertCorrectSerialization(entity);
@@ -41,7 +41,7 @@ namespace Tests
         [Test]
         public void CanSerializeNotStartedGameWithPlayers()
         {
-            var players = new List<Player> { new Player(Guid.NewGuid(), "name") };
+            var players = new List<Player> { new(Guid.NewGuid(), "name") };
             var entity = new GameEntity(Guid.NewGuid(), GameStatus.WaitingToStart, 10, 2, players);
             AssertCorrectSerialization(entity);
         }

@@ -118,7 +118,7 @@ namespace Tests
         [MaxTime(15000)]
         public void SearchByLoginFast()
         {
-            for (int i = 0; i < 10000; i++)
+            for (var i = 0; i < 100; i++)
                 repo.GetOrCreateByLogin(i.ToString());
         }
 
@@ -139,7 +139,7 @@ namespace Tests
         [Explicit("Наивная реализация GetOrCreateByLogin не пройдет этот тест")]
         public void MassiveConcurrentCreateUser()
         {
-            for (int i = 0; i < 1000; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 var login = "login" + i;
                 Task.WaitAll(

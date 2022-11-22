@@ -1,7 +1,10 @@
+using System.Collections.Generic;
+
 namespace Game.Domain
 {
     public interface IGameTurnRepository
     {
-        // TODO: Спроектировать интерфейс исходя из потребностей ConsoleApp
+        GameTurnEntity Insert(GameTurnEntity gameTurnEntity);
+        IReadOnlyCollection<GameTurnEntity> FindLatest(int limit = 5);
     }
 }

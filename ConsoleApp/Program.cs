@@ -1,19 +1,25 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using MongoDB.Driver;
 
 namespace ConsoleApp
 {
-    class Program
+    internal class Program
     {
-        private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
-        private readonly Random random = new Random();
+        private readonly Random random = new();
+        private readonly IUserRepository userRepo;
+        private readonly IGameTurnRepository gameTurnsRepo;
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var mongoConnectionString = "mongodb+srv://admin:admin@backend.fu16otf.mongodb.net/backend";
+            var mongoClient = new MongoClient(mongoConnectionString);
+            var db = mongoClient.GetDatabase("game");
+            userRepo = new MongoUserRepository(db);
+            gameRepo = new MongoGameRepository(db);
+            gameTurnsRepo = new MongoGameTurnRepository(db);
         }
 
         public static void Main(string[] args)
@@ -115,7 +121,7 @@ namespace ConsoleApp
                 return false;
             }
 
-            PlayerDecision? decision = AskHumanDecision();
+            var decision = AskHumanDecision();
             if (!decision.HasValue)
                 return false;
             game.SetPlayerDecision(humanUserId, decision.Value);
@@ -125,8 +131,7 @@ namespace ConsoleApp
 
             if (game.HaveDecisionOfEveryPlayer)
             {
-                // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                gameTurnsRepo.Insert(game.FinishTurn());
             }
 
             ShowScore(game);
@@ -180,7 +185,15 @@ namespace ConsoleApp
         private void ShowScore(GameEntity game)
         {
             var players = game.Players;
-            // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
+            var latestResults = gameTurnsRepo.FindLatest(5);
+            foreach (var result in latestResults)
+            {
+                var winner = result.Winner == Guid.Empty ? "draw" : userRepo.FindById(result.Winner)!.Login;
+                Console.WriteLine($"{players[0].Name} - {result.FirstPlayerDecision} " +
+                                  $"{players[1].Name} - {result.SecondPlayerDecision} " +
+                                  $"Winner: {winner}");
+            }
+
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
         }
     }

@@ -5,14 +5,6 @@ namespace Game.Domain
 {
     public class PageList<T> : List<T>
     {
-        public int CurrentPage { get; }
-        public int TotalPages { get; }
-        public int PageSize { get; }
-        public long TotalCount { get; }
-
-        public bool HasPrevious => CurrentPage > 1;
-        public bool HasNext => CurrentPage < TotalPages;
-
         public PageList(List<T> items, long totalCount, int currentPage, int pageSize)
         {
             TotalCount = totalCount;
@@ -21,5 +13,13 @@ namespace Game.Domain
             TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
             AddRange(items);
         }
+
+        public int CurrentPage { get; }
+        public int TotalPages { get; }
+        public int PageSize { get; }
+        public long TotalCount { get; }
+
+        public bool HasPrevious => CurrentPage > 1;
+        public bool HasNext => CurrentPage < TotalPages;
     }
 }
