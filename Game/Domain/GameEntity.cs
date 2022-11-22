@@ -93,9 +93,16 @@ namespace Game.Domain
                 }
             }
 
-            //TODO Заполнить все внутри GameTurnEntity, в том числе winnerId
-            var result = new GameTurnEntity();
-            // Это должно быть после создания GameTurnEntity
+            var result = new GameTurnEntity
+            {
+                Id = Guid.NewGuid(),
+                Timestamp = DateTime.Now,
+                // ReSharper disable once PossibleInvalidOperationException
+                FirstPlayerDecision = Players[0].Decision.Value,
+                // ReSharper disable once PossibleInvalidOperationException
+                SecondPlayerDecision = Players[1].Decision.Value,
+                Winner = winnerId
+            };
             foreach (var player in Players)
                 player.Decision = null;
             CurrentTurnIndex++;

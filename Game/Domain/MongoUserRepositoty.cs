@@ -34,20 +34,21 @@ namespace Game.Domain
 
         public void Delete(Guid id) => userCollection.DeleteOne(Builders<UserEntity>.Filter.Eq(x => x.Id, id));
 
-        // Для вывода списка всех пользователей (упорядоченных по логину)
-        // страницы нумеруются с единицы
         public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
         {
             var startIndex = pageSize * (pageNumber - 1);
-            var userEntities = userCollection.FindSync(FilterDefinition<UserEntity>.Empty)
-                .ToList();
-            var page = userEntities
+            var page = userCollection
+                .Find(FilterDefinition<UserEntity>.Empty)
+                .SortBy(x => x.Login)
                 .Skip(startIndex)
-                .Take(pageSize)
-                .OrderBy(x => x.Login);
-            var pageList = new PageList<UserEntity>(page.ToList(), userEntities.Count, pageNumber, pageSize);
+                .Limit(pageSize)
+                .ToList();
+            var pageList = new PageList<UserEntity>(
+                page,
+                userCollection.CountDocuments(FilterDefinition<UserEntity>.Empty),
+                pageNumber,
+                pageSize);
             return pageList;
-            //TODO: Тебе понадобятся SortBy, Skip и Limit
         }
 
         public void UpdateOrInsert(UserEntity user, out bool isInserted) => throw new NotImplementedException();
