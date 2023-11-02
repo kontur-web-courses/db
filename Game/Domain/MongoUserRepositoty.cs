@@ -1,4 +1,5 @@
 using System;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Game.Domain
@@ -15,39 +16,53 @@ namespace Game.Domain
 
         public UserEntity Insert(UserEntity user)
         {
-            //TODO: Ищи в документации InsertXXX.
-            throw new NotImplementedException();
+            userCollection.InsertOne(user);
+            return user;
         }
 
         public UserEntity FindById(Guid id)
         {
-            //TODO: Ищи в документации FindXXX
-            throw new NotImplementedException();
+            return userCollection
+                .Find(x => x.Id == id)
+                .FirstOrDefault();
         }
 
         public UserEntity GetOrCreateByLogin(string login)
         {
-            //TODO: Это Find или Insert
-            throw new NotImplementedException();
+            var userEntity = userCollection.Find(x => x.Login == login).FirstOrDefault();
+            if (userEntity != null)
+                return userEntity;
+            userEntity = new UserEntity(Guid.NewGuid())
+            {
+                Login = login
+            };
+            userCollection.InsertOne(userEntity);
+            return userEntity;
         }
 
         public void Update(UserEntity user)
         {
-            //TODO: Ищи в документации ReplaceXXX
-            throw new NotImplementedException();
+            userCollection
+                .FindOneAndReplace(x => x.Id == user.Id, user);
         }
 
         public void Delete(Guid id)
         {
-            throw new NotImplementedException();
+            userCollection
+                .FindOneAndDelete(x => x.Id == id);
         }
 
         // Для вывода списка всех пользователей (упорядоченных по логину)
         // страницы нумеруются с единицы
         public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
         {
-            //TODO: Тебе понадобятся SortBy, Skip и Limit
-            throw new NotImplementedException();
+            var pageList = userCollection
+                .Aggregate()
+                .SortBy(x => x.Login)
+                .Skip((pageNumber - 1) * pageSize)
+                .Limit(pageSize)
+                .ToList();
+            return new PageList<UserEntity>(pageList, userCollection.CountDocuments(x => true), pageNumber, pageSize);
         }
 
         // Не нужно реализовывать этот метод
