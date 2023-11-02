@@ -14,9 +14,8 @@ namespace ConsoleApp
         private Program(string[] args)
         {
             var db = Create();
-            db.DropCollection(MongoUserRepository.CollectionName);
             userRepo = new MongoUserRepository(db);
-            gameRepo = new InMemoryGameRepository();
+            gameRepo = new MongoGameRepository(db);
         }
 
         public static void Main(string[] args)
@@ -187,7 +186,7 @@ namespace ConsoleApp
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
         }
         
-        private static IMongoDatabase Create()
+        private IMongoDatabase Create()
         {
             var mongoConnectionString = Environment.GetEnvironmentVariable("PROJECT5100_MONGO_CONNECTION_STRING")
                                         ?? "mongodb://localhost:27017";
