@@ -7,8 +7,8 @@ namespace Tests
     {
         public static IMongoDatabase Create()
         {
-            var mongoConnectionString = Environment.GetEnvironmentVariable("PROJECT5100_MONGO_CONNECTION_STRING")
-                                        ?? "mongodb://localhost:27017";
+            var mongoConnectionString = "mongodb://localhost:27017"
+                                        ?? "mongodb+srv://admin:R4hFG5ckl3TcaT3E@backendfiitdb.ewnbiqr.mongodb.net/";
             var mongoClient = new MongoClient(mongoConnectionString);
             return mongoClient.GetDatabase("game-tests");
         }
