@@ -42,7 +42,7 @@ namespace Tests
         {
             var createdGame = repo.Insert(new GameEntity(10));
             var login = "someUserName";
-            createdGame.AddPlayer(new UserEntity { Login = login });
+            createdGame.AddPlayer(new UserEntity {Login = login});
             repo.Update(createdGame);
             var retrievedGame = repo.FindById(createdGame.Id);
             retrievedGame.Players.Should().HaveCount(1);
