@@ -9,6 +9,7 @@ namespace ConsoleApp
     {
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
+        private readonly IGameTurnRepository turnRepo;
         private readonly Random random = new Random();
 
         private Program(string[] args)
@@ -20,6 +21,7 @@ namespace ConsoleApp
 
             userRepo = new MongoUserRepository(db);
             gameRepo = new MongoGameRepository(db);
+            turnRepo = new MongoGameTurnRepository(db);
         }
 
         public static void Main(string[] args)
@@ -132,7 +134,8 @@ namespace ConsoleApp
             if (game.HaveDecisionOfEveryPlayer)
             {
                 // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var result = game.FinishTurn();
+
             }
 
             ShowScore(game);
