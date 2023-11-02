@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using MongoDB.Driver;
 
 namespace ConsoleApp
 {
@@ -9,11 +10,16 @@ namespace ConsoleApp
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
         private readonly Random random = new Random();
+        private readonly IGameTurnRepository gameTurnRepo;
 
         private Program(string[] args)
         {
+            
             userRepo = new InMemoryUserRepository();
             gameRepo = new InMemoryGameRepository();
+            var db = new MongoClient("mongodb+srv://cmbbigis:8UnHIHU9gzDY5Byz@kontur-backend-course.ijouauu.mongodb.net/")
+                .GetDatabase("game");
+            gameTurnRepo = new MongoGameTurnRepository(db);
         }
 
         public static void Main(string[] args)
@@ -126,7 +132,8 @@ namespace ConsoleApp
             if (game.HaveDecisionOfEveryPlayer)
             {
                 // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var turn = game.FinishTurn();
+                gameTurnRepo.Insert(turn);
             }
 
             ShowScore(game);
@@ -181,6 +188,13 @@ namespace ConsoleApp
         {
             var players = game.Players;
             // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
+            var lastGames = gameTurnRepo.GetLastTurns(game.Id).OrderBy(x => x.Turn);
+            Console.WriteLine(String.Join('\n', lastGames.Select(x =>
+            {
+                var winner = x.Winner != 0 ? "Player" + x.Winner : "No one";
+                return $"Turn number {x.Turn + 1}\nFirstPlayer {x.FirstPlayer} played {x.FirstPlayerDecision}; " +
+                       $"Player2 {x.SecondPlayer} played {x.SecondPlayerDecision}\n{winner} won!";
+            }).ToList()));
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
         }
     }
