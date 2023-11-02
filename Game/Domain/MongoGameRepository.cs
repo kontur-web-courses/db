@@ -8,38 +8,37 @@ namespace Game.Domain
     public class MongoGameRepository : IGameRepository
     {
         public const string CollectionName = "games";
+        private IMongoCollection<GameEntity> collection;
 
         public MongoGameRepository(IMongoDatabase db)
         {
+            collection = db.GetCollection<GameEntity>(CollectionName);
         }
 
         public GameEntity Insert(GameEntity game)
         {
-            throw new NotImplementedException();
+            collection.InsertOne(game);
+            return game;
         }
 
-        public GameEntity FindById(Guid gameId)
-        {
-            throw new NotImplementedException();
-        }
+        public GameEntity FindById(Guid gameId) => collection.FindSync(g => g.Id == gameId).FirstOrDefault();
 
         public void Update(GameEntity game)
         {
-            throw new NotImplementedException();
+            collection.ReplaceOne(u => u.Id == game.Id, game);
         }
 
         // Возвращает не более чем limit игр со статусом GameStatus.WaitingToStart
-        public IList<GameEntity> FindWaitingToStart(int limit)
-        {
-            //TODO: Используй Find и Limit
-            throw new NotImplementedException();
-        }
+        public IList<GameEntity> FindWaitingToStart(int limit) => collection
+            .Find(g => g.Status == GameStatus.WaitingToStart)
+            .Limit(limit)
+            .ToList();
 
         // Обновляет игру, если она находится в статусе GameStatus.WaitingToStart
         public bool TryUpdateWaitingToStart(GameEntity game)
         {
-            //TODO: Для проверки успешности используй IsAcknowledged и ModifiedCount из результата
-            throw new NotImplementedException();
+            var replacedResult = collection.ReplaceOne(g => g.Status == GameStatus.WaitingToStart && g.Id == game.Id, game);
+            return replacedResult.IsAcknowledged && replacedResult.ModifiedCount > 0;
         }
     }
 }
