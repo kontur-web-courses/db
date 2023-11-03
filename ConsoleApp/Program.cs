@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using Tests;
 
 namespace ConsoleApp
 {
@@ -12,8 +13,9 @@ namespace ConsoleApp
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var db = TestMongoDatabase.Create();
+            userRepo = new MongoUserRepository(db, false);
+            gameRepo = new MongoGameRepository(db, false);
         }
 
         public static void Main(string[] args)
