@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Game.Domain;
+using JetBrains.Annotations;
+using Tests;
 
 namespace ConsoleApp
 {
@@ -8,12 +11,15 @@ namespace ConsoleApp
     {
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
+        private readonly IGameTurnRepository gameTurnRepo;
         private readonly Random random = new Random();
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var db = TestMongoDatabase.Create();
+            userRepo = new MongoUserRepository(db, false);
+            gameRepo = new MongoGameRepository(db, false);
+            gameTurnRepo = new MongoGameTurnRepository(db, false);
         }
 
         public static void Main(string[] args)
@@ -125,8 +131,8 @@ namespace ConsoleApp
 
             if (game.HaveDecisionOfEveryPlayer)
             {
-                // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var gameTurn = game.FinishTurn();
+                gameTurnRepo.Insert(gameTurn);
             }
 
             ShowScore(game);
@@ -181,7 +187,23 @@ namespace ConsoleApp
         {
             var players = game.Players;
             // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
+            var lastTurns = gameTurnRepo.FindLastTurns(game.Id);
+            foreach (var lastTurn in lastTurns)
+            {
+                var winner = GetWinner(players, lastTurn.WinnerId);
+                Console.WriteLine($"Turn {lastTurn.TurnIndex}: {players[0].Name} {lastTurn.FirstPlayerDecision} : {players[1].Name} {lastTurn.SecondPlayerDecision}");
+                Console.WriteLine($"Turn result: {(winner is null ? "draw" : $"{winner.Name} win")}");
+            }
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
+        }
+
+        [CanBeNull]
+        private Player GetWinner(IReadOnlyList<Player> players, Guid winnerId)
+        {
+            if (winnerId == Guid.Empty)
+                return null;
+
+            return players[0].UserId == winnerId ? players[0] : players[1];
         }
     }
 }
