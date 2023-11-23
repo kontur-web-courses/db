@@ -11,6 +11,9 @@ namespace Game.Domain
         public MongoUserRepository(IMongoDatabase database)
         {
             userCollection = database.GetCollection<UserEntity>(CollectionName);
+            var indexOptions = new CreateIndexOptions { Unique = true };
+            var indexKeys = Builders<UserEntity>.IndexKeys.Ascending(x => x.Login);
+            userCollection.Indexes.CreateOne(new CreateIndexModel<UserEntity>(indexKeys, indexOptions));
         }
 
         public UserEntity Insert(UserEntity user)
