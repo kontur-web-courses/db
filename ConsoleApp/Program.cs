@@ -152,7 +152,7 @@ namespace ConsoleApp
 
         private PlayerDecision GetAiDecision()
         {
-            return (PlayerDecision)Math.Min(3, 1 + random.Next(4));
+            return (PlayerDecision)(random.Next(300000000) % 3) + 1;
         }
 
         private void UpdatePlayersWhenGameFinished(GameEntity game)
