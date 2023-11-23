@@ -10,8 +10,7 @@ namespace Game.Domain
         [BsonElement]
         private readonly List<Player> players;
 
-        public GameEntity(int turnsCount)
-            : this(Guid.Empty, GameStatus.WaitingToStart, turnsCount, 0, new List<Player>())
+        public GameEntity(int turnsCount) : this(Guid.Empty, GameStatus.WaitingToStart, turnsCount, 0, new List<Player>())
         {
         }
 
