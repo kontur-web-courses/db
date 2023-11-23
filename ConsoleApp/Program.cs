@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using Tests;
 
 namespace ConsoleApp
 {
@@ -12,9 +13,10 @@ namespace ConsoleApp
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
-        }
+            var db = TestMongoDatabase.Create();
+            userRepo = new MongoUserRepository(db);
+            gameRepo = new MongoGameRepository(db);
+      }
 
         public static void Main(string[] args)
         {
@@ -143,7 +145,7 @@ namespace ConsoleApp
 
         private PlayerDecision GetAiDecision()
         {
-            return (PlayerDecision)Math.Min(3, 1 + random.Next(4));
+            return (PlayerDecision)(random.Next(300000000) % 3) + 1;
         }
 
         private void UpdatePlayersWhenGameFinished(GameEntity game)
