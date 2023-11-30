@@ -1,23 +1,25 @@
 using System;
 using System.Linq;
 using Game.Domain;
-using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver;
 
 namespace ConsoleApp
 {
     class Program
     {
-        [BsonElement]
-        private readonly IUserRepository userRepo;
-        [BsonElement]
+        private readonly MongoUserRepository userRepo;
         private readonly IGameRepository gameRepo;
-        [BsonElement]
         private readonly Random random = new Random();
-
-        [BsonConstructor]
+        
+        [Obsolete("Obsolete")]
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
+            var mongoConnectionString = Environment.GetEnvironmentVariable("PROJECT5100_MONGO_CONNECTION_STRING")
+                                        ?? "mongodb://localhost:27017";
+            var mongoClient = new MongoClient(mongoConnectionString);
+            var db = mongoClient.GetDatabase("game");
+            userRepo = new MongoUserRepository(db);
+            
             gameRepo = new InMemoryGameRepository();
         }
 
