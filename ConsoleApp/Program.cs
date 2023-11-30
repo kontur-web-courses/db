@@ -8,7 +8,7 @@ namespace ConsoleApp
     class Program
     {
         private readonly MongoUserRepository userRepo;
-        private readonly IGameRepository gameRepo;
+        private readonly MongoGameRepository gameRepo;
         private readonly Random random = new Random();
         
         [Obsolete("Obsolete")]
@@ -18,9 +18,9 @@ namespace ConsoleApp
                                         ?? "mongodb://localhost:27017";
             var mongoClient = new MongoClient(mongoConnectionString);
             var db = mongoClient.GetDatabase("game");
-            userRepo = new MongoUserRepository(db);
             
-            gameRepo = new InMemoryGameRepository();
+            userRepo = new MongoUserRepository(db);
+            gameRepo = new MongoGameRepository(db);
         }
 
         public static void Main(string[] args)
