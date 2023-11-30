@@ -1,15 +1,20 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace ConsoleApp
 {
     class Program
     {
+        [BsonElement]
         private readonly IUserRepository userRepo;
+        [BsonElement]
         private readonly IGameRepository gameRepo;
+        [BsonElement]
         private readonly Random random = new Random();
 
+        [BsonConstructor]
         private Program(string[] args)
         {
             userRepo = new InMemoryUserRepository();
