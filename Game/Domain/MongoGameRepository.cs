@@ -7,39 +7,42 @@ namespace Game.Domain
     // TODO Сделать по аналогии с MongoUserRepository
     public class MongoGameRepository : IGameRepository
     {
+        private readonly IMongoCollection<GameEntity> gameCollection;
         public const string CollectionName = "games";
 
-        public MongoGameRepository(IMongoDatabase db)
+        public MongoGameRepository(IMongoDatabase database)
         {
+            gameCollection = database.GetCollection<GameEntity>(CollectionName);
         }
 
         public GameEntity Insert(GameEntity game)
         {
-            throw new NotImplementedException();
+            gameCollection.InsertOne(game);
+            return game;
         }
 
-        public GameEntity FindById(Guid gameId)
-        {
-            throw new NotImplementedException();
-        }
+        public GameEntity FindById(Guid gameId) => gameCollection.Find(game => game.Id == gameId).FirstOrDefault();
 
-        public void Update(GameEntity game)
+        public void Update(GameEntity updatedGame)
         {
-            throw new NotImplementedException();
+            gameCollection.ReplaceOne(game => game.Id == updatedGame.Id, updatedGame);
         }
 
         // Возвращает не более чем limit игр со статусом GameStatus.WaitingToStart
         public IList<GameEntity> FindWaitingToStart(int limit)
         {
-            //TODO: Используй Find и Limit
-            throw new NotImplementedException();
+            return gameCollection.Find(game => game.Status == GameStatus.WaitingToStart).Limit(limit).ToList();
         }
 
         // Обновляет игру, если она находится в статусе GameStatus.WaitingToStart
         public bool TryUpdateWaitingToStart(GameEntity game)
         {
-            //TODO: Для проверки успешности используй IsAcknowledged и ModifiedCount из результата
-            throw new NotImplementedException();
+            var foundGame = gameCollection.Find(gameEntity => gameEntity.Id == game.Id).FirstOrDefault();
+            if (foundGame is not { Status: GameStatus.WaitingToStart })
+                return false;
+
+            var operationResult = gameCollection.ReplaceOne(gameEntity => gameEntity.Id == game.Id, game);
+            return operationResult.IsAcknowledged && operationResult.ModifiedCount == 1;
         }
     }
 }
