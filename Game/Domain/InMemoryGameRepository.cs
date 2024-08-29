@@ -1,3 +1,4 @@
+using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,6 +7,7 @@ namespace Game.Domain
 {
     public class InMemoryGameRepository : IGameRepository
     {
+        [BsonElement]
         private readonly Dictionary<Guid, GameEntity> entities = new Dictionary<Guid, GameEntity>();
 
         public GameEntity Insert(GameEntity game)

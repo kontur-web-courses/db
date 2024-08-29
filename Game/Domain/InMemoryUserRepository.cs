@@ -1,3 +1,4 @@
+using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,8 +7,10 @@ namespace Game.Domain
 {
     public class InMemoryUserRepository : IUserRepository
     {
+        [BsonElement]
         private readonly Guid adminId = Guid.Parse("77777777-7777-7777-7777-777777777777");
         private const string AdminLogin = "Admin";
+        [BsonElement]
         private readonly Dictionary<Guid, UserEntity> entities = new Dictionary<Guid, UserEntity>();
 
         public InMemoryUserRepository()
