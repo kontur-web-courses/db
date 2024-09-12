@@ -10,7 +10,7 @@ namespace Game.Domain
         UserEntity FindById(Guid id);
         [NotNull]
         UserEntity GetOrCreateByLogin(string login);
-        void Update(UserEntity user);
+        void Update(UserEntity updatedUser);
         void UpdateOrInsert(UserEntity user, out bool isInserted);
         void Delete(Guid id);
         PageList<UserEntity> GetPage(int pageNumber, int pageSize);

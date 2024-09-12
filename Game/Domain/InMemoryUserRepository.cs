@@ -49,12 +49,12 @@ namespace Game.Domain
             return Clone(entity.Id, entity);
         }
 
-        public void Update(UserEntity user)
+        public void Update(UserEntity updatedUser)
         {
-            if (!entities.ContainsKey(user.Id))
+            if (!entities.ContainsKey(updatedUser.Id))
                 return;
 
-            entities[user.Id] = Clone(user.Id, user);
+            entities[updatedUser.Id] = Clone(updatedUser.Id, updatedUser);
         }
 
         public void UpdateOrInsert(UserEntity user, out bool isInserted)

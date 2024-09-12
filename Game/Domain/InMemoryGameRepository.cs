@@ -24,12 +24,12 @@ namespace Game.Domain
             return entities.TryGetValue(id, out var entity) ? Clone(id, entity) : null;
         }
 
-        public void Update(GameEntity game)
+        public void Update(GameEntity updatedGame)
         {
-            if (!entities.ContainsKey(game.Id))
+            if (!entities.ContainsKey(updatedGame.Id))
                 return;
 
-            entities[game.Id] = Clone(game.Id, game);
+            entities[updatedGame.Id] = Clone(updatedGame.Id, updatedGame);
         }
 
         public IList<GameEntity> FindWaitingToStart(int limit)

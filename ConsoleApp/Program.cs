@@ -12,7 +12,9 @@ namespace ConsoleApp
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
+            var db = MongoDatabase.Create();
+            
+            userRepo = new MongoUserRepository(db);
             gameRepo = new InMemoryGameRepository();
         }
 
@@ -23,7 +25,7 @@ namespace ConsoleApp
 
         private void RunMenuLoop()
         {
-            var humanUser = userRepo.GetOrCreateByLogin("Human");
+            var humanUser = userRepo.GetOrCreateByLogin("Anna");
             var aiUser = userRepo.GetOrCreateByLogin("AI");
             var game = FindCurrentGame(humanUser) ?? StartNewGame(humanUser);
             if (!TryJoinToGame(game, aiUser))
