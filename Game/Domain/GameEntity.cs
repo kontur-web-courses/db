@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Game.Domain
 {
     public class GameEntity
     {
+        [BsonElement] 
         private readonly List<Player> players;
 
         public GameEntity(int turnsCount)
@@ -13,6 +15,7 @@ namespace Game.Domain
         {
         }
 
+        [BsonConstructor]
         public GameEntity(Guid id, GameStatus status, int turnsCount, int currentTurnIndex, List<Player> players)
         {
             Id = id;
@@ -22,19 +25,21 @@ namespace Game.Domain
             this.players = players;
         }
 
+        [BsonElement] 
         public Guid Id
         {
             get;
             // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local For MongoDB
             private set;
         }
-
+        [BsonElement] 
         public IReadOnlyList<Player> Players => players.AsReadOnly();
 
+        [BsonElement] 
         public int TurnsCount { get; }
-
+        [BsonElement] 
         public int CurrentTurnIndex { get; private set; }
-
+        [BsonElement] 
         public GameStatus Status { get; private set; }
 
         public void AddPlayer(UserEntity user)
@@ -58,7 +63,7 @@ namespace Game.Domain
             if (!IsFinished())
                 Status = GameStatus.Canceled;
         }
-
+        [BsonElement] 
         public bool HaveDecisionOfEveryPlayer => Players.All(p => p.Decision.HasValue);
 
         public void SetPlayerDecision(Guid userId, PlayerDecision decision)
@@ -89,7 +94,10 @@ namespace Game.Domain
                 }
             }
             //TODO Заполнить все внутри GameTurnEntity, в том числе winnerId
-            var result = new GameTurnEntity();
+            var result = new GameTurnEntity(Id, winnerId, 
+                players[0], players[0].Decision, 
+                players[1], players[1].Decision, DateTime.Now); 
+            
             // Это должно быть после создания GameTurnEntity
             foreach (var player in Players)
                 player.Decision = null;
