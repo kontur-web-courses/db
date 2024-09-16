@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Game.Domain
 {
     public class GameEntity
     {
+        [BsonElement]
         private readonly List<Player> players;
 
         public GameEntity(int turnsCount)
@@ -13,6 +15,7 @@ namespace Game.Domain
         {
         }
 
+        [BsonConstructor]
         public GameEntity(Guid id, GameStatus status, int turnsCount, int currentTurnIndex, List<Player> players)
         {
             Id = id;
@@ -31,6 +34,7 @@ namespace Game.Domain
 
         public IReadOnlyList<Player> Players => players.AsReadOnly();
 
+        [BsonElement]
         public int TurnsCount { get; }
 
         public int CurrentTurnIndex { get; private set; }
@@ -89,7 +93,7 @@ namespace Game.Domain
                 }
             }
             //TODO Заполнить все внутри GameTurnEntity, в том числе winnerId
-            var result = new GameTurnEntity();
+            var result = new GameTurnEntity(Id, winnerId, Players[0].Decision!.Value, Players[1].Decision!.Value, CurrentTurnIndex);
             // Это должно быть после создания GameTurnEntity
             foreach (var player in Players)
                 player.Decision = null;
