@@ -8,38 +8,58 @@ namespace Game.Domain
     public class MongoGameRepository : IGameRepository
     {
         public const string CollectionName = "games";
+        private readonly IMongoCollection<GameEntity> gameCollection;
 
         public MongoGameRepository(IMongoDatabase db)
         {
+            gameCollection = db.GetCollection<GameEntity>(CollectionName);
         }
 
         public GameEntity Insert(GameEntity game)
         {
-            throw new NotImplementedException();
+            gameCollection.InsertOne(game);
+            return FindById(game.Id);
         }
 
         public GameEntity FindById(Guid gameId)
         {
-            throw new NotImplementedException();
+            return gameCollection.Find(gameEntity => gameEntity.Id == gameId).FirstOrDefault();
         }
 
         public void Update(GameEntity game)
         {
-            throw new NotImplementedException();
+            var foundGame = FindById(game.Id);
+            if (foundGame != null)
+            {
+                gameCollection.ReplaceOne(gameEntity => gameEntity.Id == game.Id, game);
+            }
+            else
+            {
+                Insert(game);
+            }
         }
 
         // Возвращает не более чем limit игр со статусом GameStatus.WaitingToStart
         public IList<GameEntity> FindWaitingToStart(int limit)
         {
-            //TODO: Используй Find и Limit
-            throw new NotImplementedException();
+            return gameCollection
+                .Find(gameEntity => gameEntity.Status == GameStatus.WaitingToStart)
+                .SortBy(gameEntity => gameEntity.Id)
+                .Limit(limit)
+                .ToList();
         }
 
         // Обновляет игру, если она находится в статусе GameStatus.WaitingToStart
         public bool TryUpdateWaitingToStart(GameEntity game)
         {
-            //TODO: Для проверки успешности используй IsAcknowledged и ModifiedCount из результата
-            throw new NotImplementedException();
+            var foundGame = FindById(game.Id);
+            if (foundGame != null && foundGame.Status == GameStatus.WaitingToStart)
+            {
+                Update(game);
+                return true;
+            }
+
+            return false;
         }
     }
 }
