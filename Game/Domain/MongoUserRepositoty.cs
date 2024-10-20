@@ -1,59 +1,68 @@
 using System;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace Game.Domain
+namespace Game.Domain;
+
+public class MongoUserRepository : IUserRepository
 {
-    public class MongoUserRepository : IUserRepository
+    public const string CollectionName = "users";
+    private readonly IMongoCollection<UserEntity> userCollection;
+
+    public MongoUserRepository(IMongoDatabase database)
     {
-        private readonly IMongoCollection<UserEntity> userCollection;
-        public const string CollectionName = "users";
+        userCollection = database.GetCollection<UserEntity>(CollectionName);
+        userCollection.Indexes.CreateOne(new CreateIndexModel<UserEntity>(
+            new BsonDocument("Login", 1),
+            new CreateIndexOptions {Unique = true}));
+    }
 
-        public MongoUserRepository(IMongoDatabase database)
-        {
-            userCollection = database.GetCollection<UserEntity>(CollectionName);
-        }
+    public UserEntity Insert(UserEntity user)
+    {
+        userCollection.InsertOne(user);
+        return user;
+    }
 
-        public UserEntity Insert(UserEntity user)
-        {
-            //TODO: Ищи в документации InsertXXX.
-            throw new NotImplementedException();
-        }
+    public UserEntity FindById(Guid id)
+    {
+        var cursor = userCollection.FindSync(user => user.Id == id);
+        return cursor.FirstOrDefault();
+    }
 
-        public UserEntity FindById(Guid id)
-        {
-            //TODO: Ищи в документации FindXXX
-            throw new NotImplementedException();
-        }
+    public UserEntity GetOrCreateByLogin(string login)
+    {
+        var cursor = userCollection.FindSync(user => user.Login == login);
+        var user = cursor.FirstOrDefault();
+        if (user != null)
+            return user;
+        user = new UserEntity(Guid.NewGuid(), login, "", "", 0, null);
+        userCollection.InsertOne(user);
+        return user;
+    }
 
-        public UserEntity GetOrCreateByLogin(string login)
-        {
-            //TODO: Это Find или Insert
-            throw new NotImplementedException();
-        }
+    public void Update(UserEntity user)
+    {
+        userCollection.ReplaceOne(u => u.Id == user.Id, user);
+    }
 
-        public void Update(UserEntity user)
-        {
-            //TODO: Ищи в документации ReplaceXXX
-            throw new NotImplementedException();
-        }
+    public void Delete(Guid id)
+    {
+        userCollection.DeleteOne(user => user.Id == id);
+    }
 
-        public void Delete(Guid id)
-        {
-            throw new NotImplementedException();
-        }
+    // Для вывода списка всех пользователей (упорядоченных по логину)
+    // страницы нумеруются с единицы
+    public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
+    {
+        var filter = new BsonDocument();
+        var totalCount = userCollection.CountDocuments(filter);
+        var userEntities = userCollection.Find(filter).SortBy(user => user.Login).Skip((pageNumber - 1) * pageSize).Limit(pageSize).ToList();
+        return new PageList<UserEntity>(userEntities, totalCount, pageNumber, pageSize);
+    }
 
-        // Для вывода списка всех пользователей (упорядоченных по логину)
-        // страницы нумеруются с единицы
-        public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
-        {
-            //TODO: Тебе понадобятся SortBy, Skip и Limit
-            throw new NotImplementedException();
-        }
-
-        // Не нужно реализовывать этот метод
-        public void UpdateOrInsert(UserEntity user, out bool isInserted)
-        {
-            throw new NotImplementedException();
-        }
+    // Не нужно реализовывать этот метод
+    public void UpdateOrInsert(UserEntity user, out bool isInserted)
+    {
+        throw new NotImplementedException();
     }
 }

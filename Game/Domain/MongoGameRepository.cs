@@ -2,44 +2,46 @@ using System;
 using System.Collections.Generic;
 using MongoDB.Driver;
 
-namespace Game.Domain
+namespace Game.Domain;
+
+public class MongoGameRepository : IGameRepository
 {
-    // TODO Сделать по аналогии с MongoUserRepository
-    public class MongoGameRepository : IGameRepository
+    public const string CollectionName = "games";
+    private readonly IMongoCollection<GameEntity> gameCollection;
+
+    public MongoGameRepository(IMongoDatabase db)
     {
-        public const string CollectionName = "games";
+        gameCollection = db.GetCollection<GameEntity>(CollectionName);
+    }
 
-        public MongoGameRepository(IMongoDatabase db)
-        {
-        }
+    public GameEntity Insert(GameEntity game)
+    {
+        gameCollection.InsertOne(game);
+        return game;
+    }
 
-        public GameEntity Insert(GameEntity game)
-        {
-            throw new NotImplementedException();
-        }
+    public GameEntity FindById(Guid gameId)
+    {
+        var cursor = gameCollection.FindSync(game => game.Id == gameId);
+        return cursor.FirstOrDefault();
+    }
 
-        public GameEntity FindById(Guid gameId)
-        {
-            throw new NotImplementedException();
-        }
+    public void Update(GameEntity game)
+    {
+        gameCollection.ReplaceOne(g => g.Id == game.Id, game);
+    }
 
-        public void Update(GameEntity game)
-        {
-            throw new NotImplementedException();
-        }
+    // Возвращает не более чем limit игр со статусом GameStatus.WaitingToStart
+    public IList<GameEntity> FindWaitingToStart(int limit)
+    {
+        var find = gameCollection.Find(game => game.Status == GameStatus.WaitingToStart).Limit(limit);
+        return find.ToList();
+    }
 
-        // Возвращает не более чем limit игр со статусом GameStatus.WaitingToStart
-        public IList<GameEntity> FindWaitingToStart(int limit)
-        {
-            //TODO: Используй Find и Limit
-            throw new NotImplementedException();
-        }
-
-        // Обновляет игру, если она находится в статусе GameStatus.WaitingToStart
-        public bool TryUpdateWaitingToStart(GameEntity game)
-        {
-            //TODO: Для проверки успешности используй IsAcknowledged и ModifiedCount из результата
-            throw new NotImplementedException();
-        }
+    // Обновляет игру, если она находится в статусе GameStatus.WaitingToStart
+    public bool TryUpdateWaitingToStart(GameEntity game)
+    {
+        var result = gameCollection.ReplaceOne(g => g.Id == game.Id && g.Status == GameStatus.WaitingToStart, game);
+        return result.IsAcknowledged && result.ModifiedCount > 0;
     }
 }
