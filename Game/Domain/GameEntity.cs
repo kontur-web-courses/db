@@ -1,3 +1,4 @@
+using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,13 +7,16 @@ namespace Game.Domain
 {
     public class GameEntity
     {
+        [BsonElement]
         private readonly List<Player> players;
 
+        //[BsonConstructor]
         public GameEntity(int turnsCount)
             : this(Guid.Empty, GameStatus.WaitingToStart, turnsCount, 0, new List<Player>())
         {
         }
 
+        [BsonConstructor]
         public GameEntity(Guid id, GameStatus status, int turnsCount, int currentTurnIndex, List<Player> players)
         {
             Id = id;
@@ -65,6 +69,7 @@ namespace Game.Domain
         {
             if (Status != GameStatus.Playing)
                 throw new InvalidOperationException(Status.ToString());
+            
             foreach (var player in Players.Where(p => p.UserId == userId))
             {
                 if (player.Decision.HasValue)
