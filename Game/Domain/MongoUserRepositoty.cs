@@ -11,43 +11,64 @@ namespace Game.Domain
         public MongoUserRepository(IMongoDatabase database)
         {
             userCollection = database.GetCollection<UserEntity>(CollectionName);
+            
+            var indexKeys = Builders<UserEntity>.IndexKeys.Ascending(u => u.Login);
+            var indexOptions = new CreateIndexOptions { Unique = true };
+            var indexModel = new CreateIndexModel<UserEntity>(indexKeys, indexOptions);
+
+            userCollection.Indexes.CreateOne(indexModel);
         }
 
         public UserEntity Insert(UserEntity user)
         {
-            //TODO: Ищи в документации InsertXXX.
-            throw new NotImplementedException();
+            userCollection.InsertOne(user);
+            return user;
         }
 
         public UserEntity FindById(Guid id)
         {
-            //TODO: Ищи в документации FindXXX
-            throw new NotImplementedException();
+            var filter = Builders<UserEntity>.Filter.Eq(u => u.Id, id);
+            return userCollection.Find(filter).FirstOrDefault();
         }
 
         public UserEntity GetOrCreateByLogin(string login)
         {
-            //TODO: Это Find или Insert
-            throw new NotImplementedException();
+            var filter = Builders<UserEntity>.Filter.Eq(u => u.Login, login);
+            var user = userCollection.Find(filter).FirstOrDefault();
+            if (user == null)
+            {
+                user = new UserEntity { Login = login };
+                Insert(user);
+            }
+            return user;
         }
 
         public void Update(UserEntity user)
         {
-            //TODO: Ищи в документации ReplaceXXX
-            throw new NotImplementedException();
+            var filter = Builders<UserEntity>.Filter.Eq(u => u.Id, user.Id);
+            userCollection.ReplaceOne(filter, user);
         }
 
         public void Delete(Guid id)
         {
-            throw new NotImplementedException();
+            var filter = Builders<UserEntity>.Filter.Eq(u => u.Id, id);
+            userCollection.DeleteOne(filter);
         }
 
         // Для вывода списка всех пользователей (упорядоченных по логину)
         // страницы нумеруются с единицы
         public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
         {
-            //TODO: Тебе понадобятся SortBy, Skip и Limit
-            throw new NotImplementedException();
+            var skip = (pageNumber - 1) * pageSize;
+            var users = userCollection
+                .Find(Builders<UserEntity>.Filter.Empty)
+                .SortBy(u => u.Login)
+                .Skip(skip)
+                .Limit(pageSize)
+                .ToList();
+
+            var totalUsers = userCollection.CountDocuments(Builders<UserEntity>.Filter.Empty);
+            return new PageList<UserEntity>(users, (int)totalUsers, pageNumber, pageSize);
         }
 
         // Не нужно реализовывать этот метод
