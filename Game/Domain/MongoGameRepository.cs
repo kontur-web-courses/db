@@ -8,38 +8,48 @@ namespace Game.Domain
     public class MongoGameRepository : IGameRepository
     {
         public const string CollectionName = "games";
+        private readonly IMongoCollection<GameEntity> dbCollection;
 
         public MongoGameRepository(IMongoDatabase db)
         {
+            dbCollection = db.GetCollection<GameEntity>(CollectionName);
         }
 
         public GameEntity Insert(GameEntity game)
         {
-            throw new NotImplementedException();
+            dbCollection.InsertOne(game);
+
+            return game;
         }
 
         public GameEntity FindById(Guid gameId)
         {
-            throw new NotImplementedException();
+            return dbCollection
+                .Find(gameEntity => gameEntity.Id == gameId)
+                .FirstOrDefault();
         }
 
         public void Update(GameEntity game)
         {
-            throw new NotImplementedException();
+            dbCollection.ReplaceOne(gameEntity => gameEntity.Id == game.Id, game);
         }
 
         // Возвращает не более чем limit игр со статусом GameStatus.WaitingToStart
         public IList<GameEntity> FindWaitingToStart(int limit)
         {
-            //TODO: Используй Find и Limit
-            throw new NotImplementedException();
+            return dbCollection
+                .Find(gameEntity => gameEntity.Status == GameStatus.WaitingToStart)
+                .Limit(limit)
+                .ToList();
         }
 
         // Обновляет игру, если она находится в статусе GameStatus.WaitingToStart
         public bool TryUpdateWaitingToStart(GameEntity game)
         {
-            //TODO: Для проверки успешности используй IsAcknowledged и ModifiedCount из результата
-            throw new NotImplementedException();
+            var replacementResult = dbCollection.ReplaceOne(gameEntity => 
+                    gameEntity.Id == game.Id && 
+                    gameEntity.Status == GameStatus.WaitingToStart, game);
+            return replacementResult.IsAcknowledged && replacementResult.ModifiedCount > 0;
         }
     }
 }
