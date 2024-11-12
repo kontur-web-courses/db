@@ -11,35 +11,65 @@ namespace Game.Domain
         public MongoUserRepository(IMongoDatabase database)
         {
             userCollection = database.GetCollection<UserEntity>(CollectionName);
+            var indexKeysDefinition = Builders<UserEntity>.IndexKeys.Ascending(user => user.Login);
+            var options = new CreateIndexOptions
+            {
+                Unique = true,
+                Name = "login_index"
+            };
+            userCollection.Indexes.CreateOne(new CreateIndexModel<UserEntity>(indexKeysDefinition, options));
         }
 
         public UserEntity Insert(UserEntity user)
         {
             //TODO: Ищи в документации InsertXXX.
-            throw new NotImplementedException();
+            /*            var foundUser = userCollection.Find(u => u.Login == user.Login).FirstOrDefault();
+                        if (foundUser != null)
+                            throw new MongoWriteException();*/
+            userCollection.InsertOne(user);
+            /*            try
+                        {
+
+                        }
+                        catch (Exception ex) 
+                        {
+                            throw;
+                        }*/
+            return user;
         }
 
         public UserEntity FindById(Guid id)
         {
+            return userCollection.Find(user => user.Id == id).FirstOrDefault();
             //TODO: Ищи в документации FindXXX
-            throw new NotImplementedException();
         }
 
         public UserEntity GetOrCreateByLogin(string login)
         {
-            //TODO: Это Find или Insert
-            throw new NotImplementedException();
-        }
+            lock (userCollection)
+            {
+                var user = userCollection.Find(u => u.Login == login, new FindOptions
+                {
+                    Hint = "login_index"
+                }).FirstOrDefault();
 
+                if (user != null) return user;
+                user = new UserEntity(Guid.NewGuid()) { Login = login };
+                userCollection.InsertOne(user);
+
+                return user;
+            }
+        }
+        
         public void Update(UserEntity user)
         {
             //TODO: Ищи в документации ReplaceXXX
-            throw new NotImplementedException();
+            userCollection.ReplaceOne(u => u.Id == user.Id, user);
         }
 
         public void Delete(Guid id)
         {
-            throw new NotImplementedException();
+            userCollection.DeleteOne(u => u.Id == id);
         }
 
         // Для вывода списка всех пользователей (упорядоченных по логину)
@@ -47,7 +77,10 @@ namespace Game.Domain
         public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
         {
             //TODO: Тебе понадобятся SortBy, Skip и Limit
-            throw new NotImplementedException();
+            var items = userCollection.Find(_ => true).SortBy(u => u.Login).Skip((pageNumber - 1) * pageSize).Limit(pageSize).ToList();
+            var totalCount = userCollection.CountDocuments(_ => true);
+            return new PageList<UserEntity>(items, totalCount, pageNumber, pageSize);
+
         }
 
         // Не нужно реализовывать этот метод
