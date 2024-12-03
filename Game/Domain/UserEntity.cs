@@ -24,6 +24,12 @@ namespace Game.Domain
             CurrentGameId = currentGameId;
         }
 
+        public UserEntity(string login)
+        {
+            Id = new Guid();
+            Login = login;
+        }
+
         public Guid Id
         {
             get;
