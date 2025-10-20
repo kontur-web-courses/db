@@ -13,18 +13,16 @@ namespace ConsoleApp
 
         private Program(string[] args)
         {
-            userRepo = CreateUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            userRepo = new MongoUserRepository(Create("users"));
+            gameRepo = new MongoGameRepository(Create("games"));
         }
-        
-        private static MongoUserRepository CreateUserRepository()
+
+        private static IMongoDatabase Create(string databaseName)
         {
             var mongoConnectionString = Environment.GetEnvironmentVariable("PROJECT5100_MONGO_CONNECTION_STRING")
                                         ?? "mongodb://localhost:27017?maxConnecting=100";
             var mongoClient = new MongoClient(mongoConnectionString);
-            var db = mongoClient.GetDatabase("game-tests");
-            db.DropCollection(MongoUserRepository.CollectionName);
-            return new MongoUserRepository(db);
+            return mongoClient.GetDatabase(databaseName);
         }
 
         public static void Main(string[] args)
@@ -103,17 +101,12 @@ namespace ConsoleApp
             if (humanUser.CurrentGameId == null) return null;
             var game = gameRepo.FindById(humanUser.CurrentGameId.Value);
             if (game == null) return null;
-            switch (game.Status)
+            return game.Status switch
             {
-                case GameStatus.WaitingToStart:
-                case GameStatus.Playing:
-                    return game;
-                case GameStatus.Finished:
-                case GameStatus.Canceled:
-                    return null;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+                GameStatus.WaitingToStart or GameStatus.Playing => game,
+                GameStatus.Finished or GameStatus.Canceled => null,
+                _ => throw new ArgumentOutOfRangeException()
+            };
         }
 
         private bool HandleOneGameTurn(Guid humanUserId)
