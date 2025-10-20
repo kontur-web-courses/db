@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using MongoDB.Driver;
 
 namespace ConsoleApp
 {
@@ -12,8 +13,17 @@ namespace ConsoleApp
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var mongoDatabase = Create("game-tests");
+            userRepo = new MongoUserRepository(mongoDatabase);
+            gameRepo = new MongoGameRepository(mongoDatabase);
+        }
+
+        private static IMongoDatabase Create(string databaseName)
+        {
+            var mongoConnectionString = Environment.GetEnvironmentVariable("PROJECT5100_MONGO_CONNECTION_STRING")
+                                        ?? "mongodb://localhost:27017?maxConnecting=100";
+            var mongoClient = new MongoClient(mongoConnectionString);
+            return mongoClient.GetDatabase(databaseName);
         }
 
         public static void Main(string[] args)
@@ -92,17 +102,12 @@ namespace ConsoleApp
             if (humanUser.CurrentGameId == null) return null;
             var game = gameRepo.FindById(humanUser.CurrentGameId.Value);
             if (game == null) return null;
-            switch (game.Status)
+            return game.Status switch
             {
-                case GameStatus.WaitingToStart:
-                case GameStatus.Playing:
-                    return game;
-                case GameStatus.Finished:
-                case GameStatus.Canceled:
-                    return null;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+                GameStatus.WaitingToStart or GameStatus.Playing => game,
+                GameStatus.Finished or GameStatus.Canceled => null,
+                _ => throw new ArgumentOutOfRangeException()
+            };
         }
 
         private bool HandleOneGameTurn(Guid humanUserId)
@@ -170,7 +175,11 @@ namespace ConsoleApp
             while (true)
             {
                 var key = Console.ReadKey(true);
-                if (key.KeyChar == '1') return PlayerDecision.Rock;
+                if (key.KeyChar == '1')
+                {
+                    Console.WriteLine();
+                    return PlayerDecision.Rock;
+                }
                 if (key.KeyChar == '2') return PlayerDecision.Scissors;
                 if (key.KeyChar == '3') return PlayerDecision.Paper;
                 if (key.Key == ConsoleKey.Escape) return null;
