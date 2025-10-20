@@ -1,3 +1,4 @@
+using MongoDB.Bson.Serialization.Attributes;
 using System;
 
 namespace Game.Domain
@@ -7,17 +8,20 @@ namespace Game.Domain
     /// </summary>
     public class Player
     {
+        [BsonConstructor]
         public Player(Guid userId, string name)
         {
             UserId = userId;
             Name = name;
         }
 
+        [BsonElement]
         public Guid UserId { get; }
 
         /// <summary>
         /// Снэпшот имени игрока на момент старта игры. Считайте, что это такое требование к игре.
         /// </summary>
+        [BsonElement]
         public string Name { get; }
         
         /// <summary>

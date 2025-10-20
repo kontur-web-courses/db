@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using Tests;
 
 namespace ConsoleApp
 {
@@ -8,12 +9,22 @@ namespace ConsoleApp
     {
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
+        private readonly IGameTurnRepository turnRepo;
         private readonly Random random = new Random();
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var dbUser = TestMongoDatabase.Create();
+            dbUser.DropCollection(MongoUserRepository.CollectionName);
+            userRepo = new MongoUserRepository(dbUser);
+
+            var dbGame = TestMongoDatabase.Create();
+            dbGame.DropCollection(MongoGameRepository.CollectionName);
+            gameRepo = new MongoGameRepository(dbGame);
+
+            var dbTurn = TestMongoDatabase.Create();
+            dbTurn.DropCollection(MongoGameTurnRepository.CollectionName);
+            turnRepo = new MongoGameTurnRepository(dbTurn);
         }
 
         public static void Main(string[] args)
@@ -126,7 +137,8 @@ namespace ConsoleApp
             if (game.HaveDecisionOfEveryPlayer)
             {
                 // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var gameTurn = game.FinishTurn();
+                turnRepo.Insert(gameTurn);
             }
 
             ShowScore(game);
@@ -180,7 +192,11 @@ namespace ConsoleApp
         private void ShowScore(GameEntity game)
         {
             var players = game.Players;
-            // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
+            // TODO: Показать информацию про 5 последних туров:
+            // кто как ходил и кто в итоге выиграл.
+            // Прочитать эту информацию из IGameTurnRepository
+            var lastTurns = turnRepo.GetLastTurns(5);
+            Console.WriteLine(string.Join('\n', lastTurns.Select(t => t.ToString())));
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
         }
     }
