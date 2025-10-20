@@ -83,7 +83,7 @@ namespace Game.Domain
         public GameTurnEntity FinishTurn()
         {
             var winnerId = Guid.Empty;
-            for (int i = 0; i < 2; i++)
+            for (var i = 0; i < 2; i++)
             {
                 var player = Players[i];
                 var opponent = Players[1 - i];
@@ -93,8 +93,11 @@ namespace Game.Domain
                 {
                     player.Score++;
                     winnerId = player.UserId;
+                    Console.WriteLine($"\n-------Выиграл {player.Name}-------\n");
                 }
             }
+            if (winnerId == Guid.Empty)
+                Console.WriteLine("\n-------Draw-------\n");
             //TODO Заполнить все внутри GameTurnEntity, в том числе winnerId
             var result = new GameTurnEntity();
             // Это должно быть после создания GameTurnEntity

@@ -13,8 +13,9 @@ namespace ConsoleApp
 
         private Program(string[] args)
         {
-            userRepo = new MongoUserRepository(Create("users"));
-            gameRepo = new MongoGameRepository(Create("games"));
+            var mongoDatabase = Create("game-tests");
+            userRepo = new MongoUserRepository(mongoDatabase);
+            gameRepo = new MongoGameRepository(mongoDatabase);
         }
 
         private static IMongoDatabase Create(string databaseName)
@@ -174,7 +175,11 @@ namespace ConsoleApp
             while (true)
             {
                 var key = Console.ReadKey(true);
-                if (key.KeyChar == '1') return PlayerDecision.Rock;
+                if (key.KeyChar == '1')
+                {
+                    Console.WriteLine();
+                    return PlayerDecision.Rock;
+                }
                 if (key.KeyChar == '2') return PlayerDecision.Scissors;
                 if (key.KeyChar == '3') return PlayerDecision.Paper;
                 if (key.Key == ConsoleKey.Escape) return null;
