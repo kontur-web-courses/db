@@ -118,6 +118,8 @@ namespace Tests
         [MaxTime(15000)]
         public void SearchByLoginFast()
         {
+            //Elapsed time of 61731,69209999999ms exceeds maximum of 15000ms
+            //Create Index -> Elapsed time of 33009,2105ms exceeds maximum of 15000ms
             for (int i = 0; i < 10000; i++)
                 repo.GetOrCreateByLogin(i.ToString());
         }
