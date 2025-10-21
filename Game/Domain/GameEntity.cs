@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Game.Domain
 {
     public class GameEntity
     {
+        [BsonElement("players")]
         private readonly List<Player> players;
 
+        [BsonConstructor]
         public GameEntity(int turnsCount)
             : this(Guid.Empty, GameStatus.WaitingToStart, turnsCount, 0, new List<Player>())
         {
@@ -22,6 +25,7 @@ namespace Game.Domain
             this.players = players;
         }
 
+        [BsonElement("id")]
         public Guid Id
         {
             get;
@@ -29,12 +33,16 @@ namespace Game.Domain
             private set;
         }
 
+        [BsonIgnore]
         public IReadOnlyList<Player> Players => players.AsReadOnly();
 
+        [BsonElement("turnsCount")]
         public int TurnsCount { get; }
 
+        [BsonElement("currentTurnIndex")]
         public int CurrentTurnIndex { get; private set; }
 
+        [BsonElement("status")]
         public GameStatus Status { get; private set; }
 
         public void AddPlayer(UserEntity user)
@@ -76,21 +84,27 @@ namespace Game.Domain
         public GameTurnEntity FinishTurn()
         {
             var winnerId = Guid.Empty;
+            var isDraw = true;
+            var playerDecisions = new List<PlayerTurnDecision>();
+
             for (int i = 0; i < 2; i++)
             {
                 var player = Players[i];
                 var opponent = Players[1 - i];
                 if (!player.Decision.HasValue || !opponent.Decision.HasValue)
                     throw new InvalidOperationException();
+
+                playerDecisions.Add(new PlayerTurnDecision(player.UserId, player.Name, player.Decision.Value));
+
                 if (player.Decision.Value.Beats(opponent.Decision.Value))
                 {
                     player.Score++;
                     winnerId = player.UserId;
+                    isDraw = false;
                 }
             }
-            //TODO Заполнить все внутри GameTurnEntity, в том числе winnerId
-            var result = new GameTurnEntity();
-            // Это должно быть после создания GameTurnEntity
+
+            var result = new GameTurnEntity(Id, CurrentTurnIndex + 1, playerDecisions, isDraw ? null : winnerId, isDraw);
             foreach (var player in Players)
                 player.Decision = null;
             CurrentTurnIndex++;
