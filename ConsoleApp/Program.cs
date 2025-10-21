@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using Tests;
 
 namespace ConsoleApp
 {
@@ -8,12 +9,15 @@ namespace ConsoleApp
     {
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
+        private readonly IGameTurnRepository turnRepo;
         private readonly Random random = new Random();
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var db = TestMongoDatabase.Create();
+            userRepo = new MongoUserRepository(db);
+            gameRepo = new MongoGameRepository(db);
+            turnRepo = new MongoGameTurnRepository(db);
         }
 
         public static void Main(string[] args)
@@ -125,8 +129,8 @@ namespace ConsoleApp
 
             if (game.HaveDecisionOfEveryPlayer)
             {
-                // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var turn = game.FinishTurn();
+                turnRepo.SaveTurn(turn);
             }
 
             ShowScore(game);
@@ -180,8 +184,31 @@ namespace ConsoleApp
         private void ShowScore(GameEntity game)
         {
             var players = game.Players;
-            // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
+            Console.WriteLine();
+
+            var lastTurns = turnRepo.GetLastTurns(game.Id, 5).OrderBy(t => t.TurnIndex).ToList();
+            if (lastTurns.Count == 0)
+            {
+                Console.WriteLine("Ещё нет сыгранных туров.");
+                return;
+            }
+            
+            foreach (var turn in lastTurns)
+            {
+                Console.WriteLine($"Тур {turn.TurnIndex + 1}:");
+                foreach (var p in turn.PlayerDecisions)
+                    Console.WriteLine($"  {p.PlayerName}: {p.Decision}");
+                if (turn.WinnerId == Guid.Empty)
+                    Console.WriteLine("  Результат: Ничья");
+                else
+                {
+                    var winner = turn.PlayerDecisions.First(x => x.PlayerId == turn.WinnerId);
+                    Console.WriteLine($"  Победитель: {winner.PlayerName}");
+                }
+                Console.WriteLine();
+            }
         }
+
     }
 }
