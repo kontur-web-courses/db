@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text;
 using Game.Domain;
 
 namespace ConsoleApp
@@ -8,12 +9,14 @@ namespace ConsoleApp
     {
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
+        private readonly IGameTurnRepository turnRepo;
         private readonly Random random = new Random();
 
         private Program(string[] args)
         {
             userRepo = new InMemoryUserRepository();
             gameRepo = new InMemoryGameRepository();
+            turnRepo = new InMemoryGameTurnRepository();
         }
 
         public static void Main(string[] args)
@@ -125,8 +128,8 @@ namespace ConsoleApp
 
             if (game.HaveDecisionOfEveryPlayer)
             {
-                // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var turn = game.FinishTurn();
+                turnRepo.Insert(turn);
             }
 
             ShowScore(game);
@@ -180,7 +183,28 @@ namespace ConsoleApp
         private void ShowScore(GameEntity game)
         {
             var players = game.Players;
-            // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
+            foreach (var turn in turnRepo.GetLastTurns(game.Id))
+            {
+                var sb = new StringBuilder($"Turn #{turn.TurnNumber}: ");
+                var winnerName = "";
+                for (var i = 0; i < players.Count; i++)
+                {
+                    var player = players[i];
+                    sb.Append($"{player.Name} goes {turn.PlayerDescisions[i]}");
+                    if (i != players.Count - 1)
+                        sb.Append(", ");
+                    else
+                        sb.Append(". ");
+                    if (player.UserId == turn.Winner)
+                    {
+                        winnerName = player.Name;
+                    }
+                }
+
+                sb.Append($"{winnerName} won");
+                Console.WriteLine(sb.ToString());
+            }
+
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
         }
     }
