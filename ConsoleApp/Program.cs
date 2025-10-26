@@ -186,7 +186,7 @@ namespace ConsoleApp
             foreach (var turn in turnRepo.GetLastTurns(game.Id))
             {
                 var sb = new StringBuilder($"Turn #{turn.TurnNumber}: ");
-                var winnerName = "";
+                var winnerName = "No one";
                 for (var i = 0; i < players.Count; i++)
                 {
                     var player = players[i];
