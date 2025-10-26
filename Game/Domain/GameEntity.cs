@@ -95,7 +95,7 @@ namespace Game.Domain
             
             var result = new GameTurnEntity
             {
-                TurnId = Guid.NewGuid(),
+                Id = Guid.NewGuid(),
                 GameId = Id,
                 TurnNumber = CurrentTurnIndex + 1,
                 PlayerDescisions = players.Select(p => (PlayerDecision)p.Decision!).ToArray(),

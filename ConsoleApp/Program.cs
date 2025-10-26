@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Text;
 using Game.Domain;
+using MongoDB.Driver;
 
 namespace ConsoleApp
 {
@@ -11,12 +12,22 @@ namespace ConsoleApp
         private readonly IGameRepository gameRepo;
         private readonly IGameTurnRepository turnRepo;
         private readonly Random random = new Random();
+        private readonly IMongoDatabase db;
 
+        private IMongoDatabase CreateMongoDb()
+        {
+            var mongoConnectionString = Environment.GetEnvironmentVariable("PROJECT5100_MONGO_CONNECTION_STRING")
+                                        ?? "mongodb://localhost:27017?maxConnecting=100";
+            var mongoClient = new MongoClient(mongoConnectionString);
+            return mongoClient.GetDatabase("game-tests");
+        }
         private Program(string[] args)
         {
+            db = CreateMongoDb();
             userRepo = new InMemoryUserRepository();
             gameRepo = new InMemoryGameRepository();
-            turnRepo = new InMemoryGameTurnRepository();
+            
+            turnRepo = new MongoGameTurnRepository(db); // InMemoryGameTurnRepository();
         }
 
         public static void Main(string[] args)

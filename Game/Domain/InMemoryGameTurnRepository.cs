@@ -10,7 +10,7 @@ public class InMemoryGameTurnRepository : IGameTurnRepository
 
     public void Insert(GameTurnEntity gameTurn)
     {
-        _entities[gameTurn.TurnId] = gameTurn;
+        _entities[gameTurn.Id] = gameTurn;
     }
 
     public IEnumerable<GameTurnEntity> GetLastTurns(Guid gameId)

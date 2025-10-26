@@ -6,7 +6,7 @@ namespace Game.Domain
     public class GameTurnEntity
     {
         [BsonElement]
-        public Guid TurnId { get; init; }
+        public Guid Id { get; init; }
 
         [BsonElement]
         public Guid GameId { get; init; }
