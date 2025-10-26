@@ -9,12 +9,14 @@ namespace ConsoleApp
     {
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
+        private readonly IGameTurnRepository gameTurnRepo;
         private readonly Random random = new Random();
 
         private Program(string[] args, IMongoDatabase mongoDatabase)
         {
             userRepo = new MongoUserRepository(mongoDatabase);
             gameRepo = new MongoGameRepository(mongoDatabase);
+            gameTurnRepo = new MongoGameTurnRepository(mongoDatabase);
         }
 
         public static void Main(string[] args)
@@ -129,8 +131,8 @@ namespace ConsoleApp
 
             if (game.HaveDecisionOfEveryPlayer)
             {
-                // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var finishedTurn = game.FinishTurn();
+                gameTurnRepo.Insert(finishedTurn);
             }
 
             ShowScore(game);
@@ -185,8 +187,38 @@ namespace ConsoleApp
         private void ShowScore(GameEntity game)
         {
             var players = game.Players;
-            // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
+            
+            var lastTurns = gameTurnRepo.GetLastTurns(game.Id, 5);
+            if (lastTurns.Any())
+            {
+                Console.WriteLine("\nLast turns:");
+                
+                var humanPlayer = players.First(p => p.UserId == players[0].UserId);
+                var aiPlayer = players.First(p => p.UserId != humanPlayer.UserId);
+        
+                foreach (var turn in lastTurns.OrderBy(t => t.TurnIndex))
+                {
+                    Console.Write($"Turn {turn.TurnIndex + 1}: ");
+            
+                    var humanDecision = turn.Decisions[humanPlayer.UserId];
+                    var aiDecision = turn.Decisions[aiPlayer.UserId];
+            
+                    Console.Write($"{humanPlayer.Name} - {humanDecision} vs {aiPlayer.Name} - {aiDecision}");
+            
+                    if (turn.WinnerId.HasValue)
+                    {
+                        var winner = players.First(p => p.UserId == turn.WinnerId.Value);
+                        Console.Write($" → Winner: {winner.Name}");
+                    }
+                    else
+                    {
+                        Console.Write(" → Draw");
+                    }
+                    Console.WriteLine();
+                }
+            }
+            Console.WriteLine();
         }
     }
 }
