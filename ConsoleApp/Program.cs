@@ -24,8 +24,8 @@ namespace ConsoleApp
         private Program(string[] args)
         {
             db = CreateMongoDb();
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            userRepo = new MongoUserRepository(db);
+            gameRepo = new MongoGameRepository(db);
             
             turnRepo = new MongoGameTurnRepository(db); // InMemoryGameTurnRepository();
         }
