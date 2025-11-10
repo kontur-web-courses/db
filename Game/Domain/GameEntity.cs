@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Game.Domain
 {
     public class GameEntity
     {
+        [BsonElement]
         private readonly List<Player> players;
 
         public GameEntity(int turnsCount)
@@ -13,6 +15,7 @@ namespace Game.Domain
         {
         }
 
+        [BsonConstructor]
         public GameEntity(Guid id, GameStatus status, int turnsCount, int currentTurnIndex, List<Player> players)
         {
             Id = id;
@@ -29,8 +32,10 @@ namespace Game.Domain
             private set;
         }
 
+        [BsonIgnore]
         public IReadOnlyList<Player> Players => players.AsReadOnly();
 
+        [BsonElement]
         public int TurnsCount { get; }
 
         public int CurrentTurnIndex { get; private set; }
@@ -75,21 +80,44 @@ namespace Game.Domain
 
         public GameTurnEntity FinishTurn()
         {
-            var winnerId = Guid.Empty;
-            for (int i = 0; i < 2; i++)
+            var player1 = Players[0];
+            var player2 = Players[1];
+            
+            if (!player1.Decision.HasValue || !player2.Decision.HasValue)
+                throw new InvalidOperationException();
+
+            var player1Decision = player1.Decision.Value;
+            var player2Decision = player2.Decision.Value;
+
+            Guid? winnerId = null;
+            bool isDraw = !player1Decision.Beats(player2Decision) && !player2Decision.Beats(player1Decision);
+            
+            if (!isDraw)
             {
-                var player = Players[i];
-                var opponent = Players[1 - i];
-                if (!player.Decision.HasValue || !opponent.Decision.HasValue)
-                    throw new InvalidOperationException();
-                if (player.Decision.Value.Beats(opponent.Decision.Value))
+                if (player1Decision.Beats(player2Decision))
                 {
-                    player.Score++;
-                    winnerId = player.UserId;
+                    player1.Score++;
+                    winnerId = player1.UserId;
+                }
+                else
+                {
+                    player2.Score++;
+                    winnerId = player2.UserId;
                 }
             }
-            //TODO Заполнить все внутри GameTurnEntity, в том числе winnerId
-            var result = new GameTurnEntity();
+
+            var result = new GameTurnEntity(
+                Guid.NewGuid(),
+                Id,
+                CurrentTurnIndex,
+                player1.UserId,
+                player1Decision,
+                player2.UserId,
+                player2Decision,
+                winnerId,
+                DateTime.UtcNow
+            );
+
             // Это должно быть после создания GameTurnEntity
             foreach (var player in Players)
                 player.Decision = null;
