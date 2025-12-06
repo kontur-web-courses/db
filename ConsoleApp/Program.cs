@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using MongoDB.Driver;
 
 namespace ConsoleApp
 {
@@ -8,12 +9,15 @@ namespace ConsoleApp
     {
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
-        private readonly Random random = new Random();
+        private readonly IGameTurnRepository gameTurnRepository;
+        private readonly Random random = new();
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var db = new MongoClient("mongodb://localhost:27017").GetDatabase("game");
+            userRepo = new MongoUserRepository(db);
+            gameRepo = new MongoGameRepository(db);
+            gameTurnRepository = new MongoGameTurnRepository(db);
         }
 
         public static void Main(string[] args)
@@ -125,8 +129,8 @@ namespace ConsoleApp
 
             if (game.HaveDecisionOfEveryPlayer)
             {
-                // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var gameTurnEntity = game.FinishTurn();
+                gameTurnRepository.Insert(gameTurnEntity);
             }
 
             ShowScore(game);
@@ -148,8 +152,6 @@ namespace ConsoleApp
 
         private void UpdatePlayersWhenGameFinished(GameEntity game)
         {
-            // Вместо этого кода можно написать специализированный метод в userRepo, который сделает все эти обновления за одну операцию UpdateMany.
-            // Вместо 4 запросов к БД будет 1, но усложнится репозиторий. В данном случае, это редкая операция, поэтому нет смысла оптимизировать.
             foreach (var player in game.Players)
             {
                 var playerUser = userRepo.FindById(player.UserId);
@@ -180,7 +182,24 @@ namespace ConsoleApp
         private void ShowScore(GameEntity game)
         {
             var players = game.Players;
-            // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
+            var playersDictionary = players.ToDictionary(p => p.UserId, p => p.Name);
+            var lastFiveTurns = gameTurnRepository.GetLastTurns(game.Id, 5);
+            foreach (var turn in lastFiveTurns)
+            {
+                var winnerName = Guid.Empty != turn.WinnerId && playersDictionary.ContainsKey(turn.WinnerId) 
+                    ? playersDictionary[turn.WinnerId] 
+                    : null;
+                
+                var decisionsDescription = string.Join(" | ", turn.Decisions
+                    .Select(x => $"Player {playersDictionary[Guid.Parse(x.Key)]} shows {x.Value}"));
+                
+                var resultDescription = string.IsNullOrEmpty(winnerName)
+                    ? "Result: draw" 
+                    : $"Result: {winnerName} wins";
+                
+                Console.WriteLine($"Turn {turn.TurnIndex}: {decisionsDescription}\n{resultDescription}");
+            }
+            
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
         }
     }
