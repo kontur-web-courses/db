@@ -55,12 +55,12 @@ namespace Tests
             var playingGame = new GameEntity(10);
             playingGame.AddPlayer(new UserEntity());
             playingGame.AddPlayer(new UserEntity());
-            repo.Insert(playingGame);
+            playingGame = repo.Insert(playingGame);
 
             var waitingToStartGame1 = new GameEntity(10);
-            repo.Insert(waitingToStartGame1);
+            waitingToStartGame1= repo.Insert(waitingToStartGame1);
             var waitingToStartGame2 = new GameEntity(10);
-            repo.Insert(waitingToStartGame2);
+            waitingToStartGame2 = repo.Insert(waitingToStartGame2);
 
             var games = repo.FindWaitingToStart(1);
             games.Select(game => game.Id).Should().Equal(waitingToStartGame1.Id);

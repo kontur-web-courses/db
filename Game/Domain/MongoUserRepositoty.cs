@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Game.Domain
@@ -11,43 +13,61 @@ namespace Game.Domain
         public MongoUserRepository(IMongoDatabase database)
         {
             userCollection = database.GetCollection<UserEntity>(CollectionName);
+            userCollection.Indexes.CreateOne(
+                new CreateIndexModel<UserEntity>(
+                    new IndexKeysDefinitionBuilder<UserEntity>()
+                        .Ascending(u => u.Login), new CreateIndexOptions() 
+                    {
+                        Unique = true
+                    }));
         }
 
         public UserEntity Insert(UserEntity user)
         {
-            //TODO: Ищи в документации InsertXXX.
-            throw new NotImplementedException();
+            userCollection.InsertOne(user);
+
+            return FindById(user.Id);
         }
 
         public UserEntity FindById(Guid id)
         {
-            //TODO: Ищи в документации FindXXX
-            throw new NotImplementedException();
+            var user = userCollection.Find(entity => entity.Id == id).FirstOrDefault();
+            return user;
         }
 
         public UserEntity GetOrCreateByLogin(string login)
         {
-            //TODO: Это Find или Insert
-            throw new NotImplementedException();
+            return userCollection
+                       .Find(item => item.Login == login)
+                       .FirstOrDefault()
+                   ?? Insert(new UserEntity() { Login = login });
         }
 
         public void Update(UserEntity user)
         {
-            //TODO: Ищи в документации ReplaceXXX
-            throw new NotImplementedException();
+            userCollection.ReplaceOne(entity => entity.Id == user.Id, user);
         }
 
         public void Delete(Guid id)
         {
-            throw new NotImplementedException();
+            userCollection.DeleteOne(item => item.Id == id);
         }
 
         // Для вывода списка всех пользователей (упорядоченных по логину)
         // страницы нумеруются с единицы
         public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
         {
-            //TODO: Тебе понадобятся SortBy, Skip и Limit
-            throw new NotImplementedException();
+            var count = userCollection.Find(item => true)
+                .CountDocuments();
+            var usersCursor = userCollection.FindSync(entity => true,
+                options: new FindOptions<UserEntity, UserEntity>()
+                {
+                    Sort = new SortDefinitionBuilder<UserEntity>()
+                        .Ascending(x => x.Login),
+                    Skip = (pageNumber - 1) * pageSize,
+                    Limit = pageSize,
+                });
+            return new PageList<UserEntity>(usersCursor.ToList(), count, pageNumber, pageSize);
         }
 
         // Не нужно реализовывать этот метод
