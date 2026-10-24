@@ -1,18 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Game.Domain
 {
     public class GameEntity
     {
+        [BsonElement]
         private readonly List<Player> players;
 
         public GameEntity(int turnsCount)
-            : this(Guid.Empty, GameStatus.WaitingToStart, turnsCount, 0, new List<Player>())
+            : this(Guid.NewGuid(), GameStatus.WaitingToStart, turnsCount, 0, new List<Player>())
         {
         }
 
+        [BsonConstructor]
         public GameEntity(Guid id, GameStatus status, int turnsCount, int currentTurnIndex, List<Player> players)
         {
             Id = id;
@@ -22,19 +25,18 @@ namespace Game.Domain
             this.players = players;
         }
 
-        public Guid Id
-        {
-            get;
-            // ReSharper disable once AutoPropertyCanBeMadeGetOnly.Local For MongoDB
-            private set;
-        }
+        [BsonId]
+        public Guid Id { get; private set; }
 
         public IReadOnlyList<Player> Players => players.AsReadOnly();
 
+        [BsonElement]
         public int TurnsCount { get; }
 
+        [BsonElement]
         public int CurrentTurnIndex { get; private set; }
 
+        [BsonElement]
         public GameStatus Status { get; private set; }
 
         public void AddPlayer(UserEntity user)
@@ -46,12 +48,7 @@ namespace Game.Domain
                 Status = GameStatus.Playing;
         }
 
-        public bool IsFinished()
-        {
-            return CurrentTurnIndex >= TurnsCount
-                   || Status == GameStatus.Finished
-                   || Status == GameStatus.Canceled;
-        }
+        public bool IsFinished() => CurrentTurnIndex >= TurnsCount || Status == GameStatus.Finished || Status == GameStatus.Canceled;
 
         public void Cancel()
         {
@@ -88,9 +85,10 @@ namespace Game.Domain
                     winnerId = player.UserId;
                 }
             }
-            //TODO Заполнить все внутри GameTurnEntity, в том числе winnerId
-            var result = new GameTurnEntity();
-            // Это должно быть после создания GameTurnEntity
+            var playersSnapshot = players
+                .Select(p => new Player(p.UserId, p.Name) { Decision = p.Decision, Score = p.Score })
+                .ToList();
+            var result = new GameTurnEntity(Guid.NewGuid(), Id, CurrentTurnIndex, playersSnapshot, winnerId);
             foreach (var player in Players)
                 player.Decision = null;
             CurrentTurnIndex++;

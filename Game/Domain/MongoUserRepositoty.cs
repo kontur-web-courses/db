@@ -1,59 +1,69 @@
 using System;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace Game.Domain
+namespace Game.Domain;
+
+public class MongoUserRepository : IUserRepository
 {
-    public class MongoUserRepository : IUserRepository
+    private readonly IMongoCollection<UserEntity> userCollection;
+    public const string CollectionName = "users";
+
+    public MongoUserRepository(IMongoDatabase db)
     {
-        private readonly IMongoCollection<UserEntity> userCollection;
-        public const string CollectionName = "users";
+        userCollection = db.GetCollection<UserEntity>(CollectionName);
+        var indexModel = new CreateIndexModel<UserEntity>(
+            Builders<UserEntity>.IndexKeys.Ascending(u => u.Login),
+            new CreateIndexOptions { Unique = true, Name = "Login" });
+        userCollection.Indexes.CreateOne(indexModel);
+    }
 
-        public MongoUserRepository(IMongoDatabase database)
-        {
-            userCollection = database.GetCollection<UserEntity>(CollectionName);
-        }
+    public UserEntity Insert(UserEntity user)
+    {
+        var id = Guid.NewGuid();
+        var withId = new UserEntity(id, user.Login, user.LastName, user.FirstName, user.GamesPlayed, user.CurrentGameId);
+        userCollection.InsertOne(withId);
+        return withId;
+    }
 
-        public UserEntity Insert(UserEntity user)
-        {
-            //TODO: Ищи в документации InsertXXX.
-            throw new NotImplementedException();
-        }
+    public UserEntity FindById(Guid id) => userCollection.Find(u => u.Id == id).FirstOrDefaultAsync().Result;
 
-        public UserEntity FindById(Guid id)
-        {
-            //TODO: Ищи в документации FindXXX
-            throw new NotImplementedException();
-        }
+    public UserEntity GetOrCreateByLogin(string login)
+    { 
+        var filter = Builders<UserEntity>.Filter.Eq(u => u.Login, login);
+        var option = new FindOneAndUpdateOptions<UserEntity> { ReturnDocument = ReturnDocument.After, IsUpsert = true };
+        var update = Builders<UserEntity>.Update
+            .SetOnInsert(u => u.Id, Guid.NewGuid())
+            .SetOnInsert(u => u.Login, login);
 
-        public UserEntity GetOrCreateByLogin(string login)
+        try
         {
-            //TODO: Это Find или Insert
-            throw new NotImplementedException();
+            return userCollection.FindOneAndUpdate(filter, update, option);
         }
+        catch (MongoCommandException ex) when (ex.Code == 11000)    // E11000 код для "DuplicateKey"
+        {
+            return userCollection.Find(u => u.Login == login).FirstOrDefault();
+        }
+    }
 
-        public void Update(UserEntity user)
-        {
-            //TODO: Ищи в документации ReplaceXXX
-            throw new NotImplementedException();
-        }
+    public void Update(UserEntity user) => userCollection.ReplaceOne(u => u.Id == user.Id, user);
 
-        public void Delete(Guid id)
-        {
-            throw new NotImplementedException();
-        }
+    public void Delete(Guid id) => userCollection.DeleteOne(u => u.Id == id);
 
-        // Для вывода списка всех пользователей (упорядоченных по логину)
-        // страницы нумеруются с единицы
-        public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
-        {
-            //TODO: Тебе понадобятся SortBy, Skip и Limit
-            throw new NotImplementedException();
-        }
+    public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
+    {
+        var totalCount = userCollection.CountDocuments(new BsonDocument());
+        var items = userCollection
+            .Find(new BsonDocument())
+            .SortBy(u => u.Login)
+            .Skip((pageNumber - 1) * pageSize)
+            .Limit(pageSize)
+            .ToList();
+        return new PageList<UserEntity>(items, totalCount, pageNumber, pageSize);
+    }
 
-        // Не нужно реализовывать этот метод
-        public void UpdateOrInsert(UserEntity user, out bool isInserted)
-        {
-            throw new NotImplementedException();
-        }
+    public void UpdateOrInsert(UserEntity user, out bool isInserted)
+    {
+        throw new NotImplementedException();
     }
 }
