@@ -9,6 +9,7 @@ namespace ConsoleApp
     {
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
+        private readonly IGameTurnRepository turnRepo;
         private readonly Random random = new Random();
 
         private Program(string[] args)
@@ -17,7 +18,8 @@ namespace ConsoleApp
             var database = client.GetDatabase("game-tests");
             
             userRepo = new MongoUserRepository(database);
-            gameRepo = new InMemoryGameRepository();
+            gameRepo = new MongoGameRepository(database);
+            turnRepo = new MongoGameTurnRepository(database);
         }
 
         public static void Main(string[] args)
@@ -129,8 +131,8 @@ namespace ConsoleApp
 
             if (game.HaveDecisionOfEveryPlayer)
             {
-                // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var turn = game.FinishTurn();
+                turnRepo.Insert(turn);
             }
 
             ShowScore(game);
@@ -184,8 +186,15 @@ namespace ConsoleApp
         private void ShowScore(GameEntity game)
         {
             var players = game.Players;
-            // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
+            foreach (var turn in turnRepo.FindLastTurns(game.Id, 5))
+            {
+                var result = turn.WinnerId == Guid.Empty
+                    ? "Draw"
+                    : $"Winner: {turn.Players.First(p => p.UserId == turn.WinnerId).Name}";
+                Console.WriteLine($"Turn {turn.TurnNumber}: {turn.Players[0].Name} - {turn.Players[0].Decision}, " +
+                                  $"{turn.Players[1].Name} - {turn.Players[1].Decision}. {result}");
+            }
         }
     }
 }
