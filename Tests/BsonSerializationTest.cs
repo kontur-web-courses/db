@@ -46,6 +46,8 @@ namespace Tests
             AssertCorrectSerialization(entity);
         }
 
+        
+
         private static void AssertCorrectSerialization<TEntity>(TEntity entity)
         {
             var memoryStream = new MemoryStream();

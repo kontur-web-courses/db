@@ -12,6 +12,7 @@
 ## 0. Установка MongoDB
 
 Для изучения нужно развернуть MongoDB локально. Есть два способа:
+
 1. Установить MongoDB Community Edition. Скачать её можно [отсюда](https://www.mongodb.com/try/download/community).
 2. Развернуть локально Docker-образ MongoDB по [инструкции](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-community-with-docker/).
 
@@ -31,7 +32,6 @@
 Более подробно про настройку сериализации в Bson читай в документации:
 http://mongodb.github.io/mongo-csharp-driver/2.10/reference/bson/mapping/
 
-
 ## 2. UserRepository
 
 ### MongoUserRepository
@@ -42,7 +42,6 @@ http://mongodb.github.io/mongo-csharp-driver/2.10/reference/bson/mapping/
    Операции записи: http://mongodb.github.io/mongo-csharp-driver/2.10/reference/driver/crud/writing/
    Проверь работоспособность тестами на этот репозиторий.
 2. С помощью MongoDB Compass убедись, что после выполнения тестов, в базе `game-tests` создаются коллекции и документы.
-
 
 ### Индекс по UserEntity.Login
 
@@ -56,13 +55,11 @@ http://mongodb.github.io/mongo-csharp-driver/2.10/reference/bson/mapping/
 4. С помощью MongoDB Compass убедись, что после выполнения тестов, у коллекции users появился индекс и он используется.
 5. Раз ты создал уникальный индекс, то тест `LoginDuplicateNotAllowed` также должен проходить. Проверь это.
 
-
 ### Users в ConsoleApp
 
 1. Поменяй `InMemoryUserRepository` на `MongoUserRepository` в `ConsoleApp`.
    Пример создания Mongo репозитория смотри в тестах на репозитории.
 2. С помощью MongoDB Compass проверь, что после окончания игры у пользователя обновляется количество сыгранных игр в БД.
-
 
 ## 3. GameRepository
 
@@ -75,20 +72,16 @@ http://mongodb.github.io/mongo-csharp-driver/2.10/reference/bson/mapping/
 2. Проверь работоспособность тестами на этот репозиторий.
 3. С помощью MongoDB Compass убедись, что после выполнения тестов, в базе game-tests создаются коллекции и документы.
 
-
 ### Games в ConsoleApp
 
 1. Поменяй `InMemoryGameRepository` на `MongoGameRepository` в `ConsoleApp`.
 2. Проверь, что прерванная на середине игра сохраняет состояние в БД и при перезапуске продолжается.
 
-
 ## 4. Бонус-задача «История игры»
 
-Самостоятельно спроектируй ещё одну сущность: `GameTurnEntity` — это информация об одном завершённом туре игры.
+Самостоятельно спроектируй ещё одну сущность: `GameTurnEntity` — это информация об одном завершённом туре 	игры.
 В рамках тура каждый игрок называет Камень Ножницы или Бумага, и определяется исход тура — победитель тура или ничья.
-Объект этого типа возвращает метод `GameEntity.FinishTurn()`.
-
-Спроектируй репозиторий этих сущностей. Добавь его использование в `ConsoleApp` в двух местах, помеченных TODO-комментариями:
+Объект этого типа возвращает метод `GameEntity.FinishTurn()`.	Спроектируй репозиторий этих сущностей. Добавь его использование в `ConsoleApp` в двух местах, помеченных TODO-комментариями:
 
 1. Сохраняй эту сущность в БД в конце каждого тура.
 2. В методе `ShowScore` получай из репозитория последние 5 туров и показывай информацию о том,
@@ -97,20 +90,18 @@ http://mongodb.github.io/mongo-csharp-driver/2.10/reference/bson/mapping/
 Убедись, что у тебя есть правильный индекс, для того, чтобы запрос последних 5 туров работал быстро.
 Можешь создать соответствующий тест, чтобы это проверить.
 
-
 ## Статьи и документация
 
 [.NET MongoDB Driver Reference](http://mongodb.github.io/mongo-csharp-driver/2.10/)
 
-
 ## Статьи про проектирование в Монго
 
-Вводные о моделировании данных: 
+Вводные о моделировании данных:
 
 https://docs.mongodb.com/manual/core/data-modeling-introduction/
 https://docs.mongodb.com/manual/core/data-model-design/
 
-Ограничение на размер документа 16 Мб и другие ограничения. https://docs.mongodb.com/manual/reference/limits/#BSON-Document-Size 
+Ограничение на размер документа 16 Мб и другие ограничения. https://docs.mongodb.com/manual/reference/limits/#BSON-Document-Size
 
 О том, как принимать решения о проектировании БД:
 
