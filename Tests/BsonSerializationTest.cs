@@ -46,6 +46,23 @@ namespace Tests
             AssertCorrectSerialization(entity);
         }
 
+        [Test]
+        public void CanSerializeGameTurn()
+        {
+            var entity = new GameTurnEntity(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                3,
+                new List<GameTurnPlayer>
+                {
+                    new GameTurnPlayer(Guid.NewGuid(), "name1", PlayerDecision.Rock),
+                    new GameTurnPlayer(Guid.NewGuid(), "name2", PlayerDecision.Scissors)
+                },
+                Guid.NewGuid());
+
+            AssertCorrectSerialization(entity);
+        }
+
         private static void AssertCorrectSerialization<TEntity>(TEntity entity)
         {
             var memoryStream = new MemoryStream();
