@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using MongoDB.Driver;
 
 namespace ConsoleApp
 {
@@ -9,11 +10,17 @@ namespace ConsoleApp
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
         private readonly Random random = new Random();
+        private readonly IGameTurnRepository turnRepo;
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+                                   ?? "mongodb://localhost:27017";
+            var client = new MongoClient(connectionString);
+            var database = client.GetDatabase("game");
+            userRepo = new MongoUserRepository(database);
+            gameRepo = new MongoGameRepository(database);
+            turnRepo = new MongoGameTurnRepository(database);
         }
 
         public static void Main(string[] args)
@@ -125,8 +132,8 @@ namespace ConsoleApp
 
             if (game.HaveDecisionOfEveryPlayer)
             {
-                // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var turn = game.FinishTurn();
+                turnRepo.Insert(turn);
             }
 
             ShowScore(game);
