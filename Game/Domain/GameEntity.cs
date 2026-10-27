@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Game.Domain
 {
     public class GameEntity
     {
+        [BsonElement]
         private readonly List<Player> players;
 
         public GameEntity(int turnsCount)
@@ -13,6 +15,7 @@ namespace Game.Domain
         {
         }
 
+        [BsonConstructor] 
         public GameEntity(Guid id, GameStatus status, int turnsCount, int currentTurnIndex, List<Player> players)
         {
             Id = id;
@@ -29,8 +32,10 @@ namespace Game.Domain
             private set;
         }
 
+        [BsonElement]
         public IReadOnlyList<Player> Players => players.AsReadOnly();
 
+        [BsonElement]
         public int TurnsCount { get; }
 
         public int CurrentTurnIndex { get; private set; }
@@ -72,31 +77,34 @@ namespace Game.Domain
                 player.Decision = decision;
             }
         }
-
+        
         public GameTurnEntity FinishTurn()
         {
             var winnerId = Guid.Empty;
-            for (int i = 0; i < 2; i++)
+            for (var i = 0; i < 2; i++)
             {
                 var player = Players[i];
                 var opponent = Players[1 - i];
                 if (!player.Decision.HasValue || !opponent.Decision.HasValue)
                     throw new InvalidOperationException();
-                if (player.Decision.Value.Beats(opponent.Decision.Value))
-                {
-                    player.Score++;
-                    winnerId = player.UserId;
-                }
+                if (!player.Decision.Value.Beats(opponent.Decision.Value)) continue;
+                player.Score++;
+                winnerId = player.UserId;
             }
-            //TODO Заполнить все внутри GameTurnEntity, в том числе winnerId
-            var result = new GameTurnEntity();
-            // Это должно быть после создания GameTurnEntity
-            foreach (var player in Players)
+            
+            var playersCopy = players
+                .Select(p => new Player(p.UserId, p.Name) { Score = p.Score, Decision = p.Decision })
+                .ToList();
+            var gameTurn = new GameTurnEntity(playersCopy, CurrentTurnIndex, Id) { WinnerId = winnerId };
+            
+            foreach (var player in players)
                 player.Decision = null;
+
             CurrentTurnIndex++;
-            if (CurrentTurnIndex == TurnsCount)
+            if (CurrentTurnIndex >= TurnsCount)
                 Status = GameStatus.Finished;
-            return result;
+            
+            return gameTurn;
         }
     }
 }
