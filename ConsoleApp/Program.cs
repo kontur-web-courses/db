@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using MongoDB.Driver;
 
 namespace ConsoleApp
 {
@@ -12,8 +13,11 @@ namespace ConsoleApp
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var connectionString = Environment.GetEnvironmentVariable("PROJECT5100_MONGO_CONNECTION_STRING")
+                                   ?? "mongodb://localhost:27017?maxConnecting=100";
+            var database = new MongoClient(connectionString).GetDatabase("game");
+            userRepo = new MongoUserRepository(database);
+            gameRepo = new MongoGameRepository(database);
         }
 
         public static void Main(string[] args)
