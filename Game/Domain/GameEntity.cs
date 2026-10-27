@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Game.Domain
 {
     public class GameEntity
     {
+        [BsonElement]
         private readonly List<Player> players;
 
         public GameEntity(int turnsCount)
@@ -13,6 +15,7 @@ namespace Game.Domain
         {
         }
 
+        [BsonConstructor("Id", "Status",  "TurnsCount", "CurrentTurnIndex", "Players")]
         public GameEntity(Guid id, GameStatus status, int turnsCount, int currentTurnIndex, List<Player> players)
         {
             Id = id;
@@ -76,7 +79,8 @@ namespace Game.Domain
         public GameTurnEntity FinishTurn()
         {
             var winnerId = Guid.Empty;
-            for (int i = 0; i < 2; i++)
+            string winnerName = null;
+            for (var i = 0; i < 2; i++)
             {
                 var player = Players[i];
                 var opponent = Players[1 - i];
@@ -86,11 +90,25 @@ namespace Game.Domain
                 {
                     player.Score++;
                     winnerId = player.UserId;
+                    winnerName = player.Name;
                 }
             }
-            //TODO Заполнить все внутри GameTurnEntity, в том числе winnerId
-            var result = new GameTurnEntity();
-            // Это должно быть после создания GameTurnEntity
+
+            var result = new GameTurnEntity
+            {
+                Id = Guid.NewGuid(),
+                GameId = Id,
+                TurnIndex = CurrentTurnIndex,
+                WinnerId = winnerId == Guid.Empty ? null : winnerId,
+                WinnerName = winnerName,
+                PlayerTurns = Players.Select(p => new PlayerTurnInfo
+                {
+                    UserId = p.UserId,
+                    PlayerName = p.Name,
+                    Decision = p.Decision.Value
+                }).ToList()
+            };
+
             foreach (var player in Players)
                 player.Decision = null;
             CurrentTurnIndex++;

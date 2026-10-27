@@ -8,12 +8,15 @@ namespace ConsoleApp
     {
         private readonly IUserRepository userRepo;
         private readonly IGameRepository gameRepo;
+        private readonly IGameTurnRepository turnRepo;
         private readonly Random random = new Random();
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var db = MongoDatabase.Create();
+            userRepo = new MongoUserRepository(db);
+            gameRepo = new MongoGameRepository(db);
+            turnRepo = new MongoGameTurnRepository(db);
         }
 
         public static void Main(string[] args)
@@ -125,8 +128,8 @@ namespace ConsoleApp
 
             if (game.HaveDecisionOfEveryPlayer)
             {
-                // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var turn = game.FinishTurn();
+                turnRepo.Insert(turn);
             }
 
             ShowScore(game);
@@ -180,8 +183,19 @@ namespace ConsoleApp
         private void ShowScore(GameEntity game)
         {
             var players = game.Players;
-            // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
+            
+            var lastTurns = turnRepo.GetLastTurns(game.Id, 5);
+            if (lastTurns.Count <= 0) 
+                return;
+            
+            Console.WriteLine("Last turns:");
+            foreach (var turn in lastTurns)
+            {
+                var moves = string.Join(" vs ", turn.PlayerTurns.Select(p => $"{p.PlayerName} ({p.Decision})"));
+                var outcome = turn.WinnerName != null ? $"Winner: {turn.WinnerName}" : "Draw";
+                Console.WriteLine($"  Turn {turn.TurnIndex + 1}: {moves} -> {outcome}");
+            }
         }
     }
 }
