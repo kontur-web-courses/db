@@ -1,4 +1,5 @@
 using System;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Game.Domain
 {
@@ -14,6 +15,7 @@ namespace Game.Domain
             Id = id;
         }
 
+        [BsonConstructor]
         public UserEntity(Guid id, string login, string lastName, string firstName, int gamesPlayed, Guid? currentGameId)
         {
             Id = id;
@@ -37,12 +39,12 @@ namespace Game.Domain
         public string Login { get; set; }
         public string LastName { get; set; }
         public string FirstName { get; set; }
-        
+
         /// <summary>
         /// Количество сыгранных игр
         /// </summary>
         public int GamesPlayed { get; set; }
-        
+
         /// <summary>
         /// Идентификатор игры, в которой этот пользователь участвует.
         /// Нужен, чтобы искать игру по первичному индексу, а не по полю Games.Players.UserId. В частности, чтобы не создавать дополнительный индекс на Games.Players.UserId

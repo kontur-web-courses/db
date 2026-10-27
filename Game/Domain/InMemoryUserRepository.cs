@@ -43,7 +43,7 @@ namespace Game.Domain
             if (existedUser != null)
                 return Clone(existedUser.Id, existedUser);
 
-            var user = new UserEntity {Login = login};
+            var user = new UserEntity { Login = login };
             var entity = Clone(Guid.NewGuid(), user);
             entities[entity.Id] = entity;
             return Clone(entity.Id, entity);

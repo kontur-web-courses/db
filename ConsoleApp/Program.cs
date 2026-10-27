@@ -1,19 +1,24 @@
 using System;
 using System.Linq;
 using Game.Domain;
+using Tests;
 
 namespace ConsoleApp
 {
     class Program
     {
-        private readonly IUserRepository userRepo;
-        private readonly IGameRepository gameRepo;
-        private readonly Random random = new Random();
+        private readonly MongoUserRepository userRepo;
+        private readonly MongoGameRepository gameRepo;
+        private readonly MongoGameTurnRepository gameTurnsRepo;
+        private readonly Random random = new();
 
         private Program(string[] args)
         {
-            userRepo = new InMemoryUserRepository();
-            gameRepo = new InMemoryGameRepository();
+            var db = TestMongoDatabase.Create();
+            db.DropCollection(MongoUserRepository.CollectionName);
+            userRepo = new MongoUserRepository(db);
+            gameRepo = new MongoGameRepository(db);
+            gameTurnsRepo = new MongoGameTurnRepository(db);
         }
 
         public static void Main(string[] args)
@@ -125,8 +130,8 @@ namespace ConsoleApp
 
             if (game.HaveDecisionOfEveryPlayer)
             {
-                // TODO: Сохранить информацию о прошедшем туре в IGameTurnRepository. Сформировать информацию о закончившемся туре внутри FinishTurn и вернуть её сюда.
-                game.FinishTurn();
+                var gameTurn = game.FinishTurn();
+                gameTurnsRepo.Insert(gameTurn);
             }
 
             ShowScore(game);
@@ -142,9 +147,7 @@ namespace ConsoleApp
         }
 
         private PlayerDecision GetAiDecision()
-        {
-            return (PlayerDecision)Math.Min(3, 1 + random.Next(4));
-        }
+            => (PlayerDecision)Math.Min(3, 1 + random.Next(4));
 
         private void UpdatePlayersWhenGameFinished(GameEntity game)
         {
@@ -180,8 +183,19 @@ namespace ConsoleApp
         private void ShowScore(GameEntity game)
         {
             var players = game.Players;
-            // TODO: Показать информацию про 5 последних туров: кто как ходил и кто в итоге выиграл. Прочитать эту информацию из IGameTurnRepository
             Console.WriteLine($"Score: {players[0].Name} {players[0].Score} : {players[1].Score} {players[1].Name}");
+            Console.WriteLine("Last Tours:");
+
+            var turnsCountToDisplay = Math.Min(5, game.CurrentTurnIndex);
+            var gameTurns = gameTurnsRepo.GetTurns(turnsCountToDisplay);
+
+            foreach (var gameTurn in gameTurns)
+            {
+                var result = $"Tour {gameTurn.TurnNumber}: " + (gameTurn.IsDraw
+                    ? $"Draw. Overall move: {gameTurn.WinnerDecision}"
+                    : $"The winner is {gameTurn.WinnerName}. The winner’s move: {gameTurn.WinnerDecision}");
+                Console.WriteLine(result);
+            }
         }
     }
 }
