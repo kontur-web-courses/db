@@ -28,11 +28,11 @@ namespace Game.Domain
         /// <summary>
         /// Ход, который выбрал игрок
         /// </summary>
-        public PlayerDecision? Decision { get; set; }
+        [BsonElement] public PlayerDecision? Decision { get; set; }
         
         /// <summary>
         /// Текущие очки в игре. Сколько туров выиграл этот игрок.
         /// </summary>
-        public int Score { get; set; }
+        [BsonElement] public int Score { get; set; }
     }
 }
