@@ -1,4 +1,5 @@
 using System;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Game.Domain
@@ -11,43 +12,64 @@ namespace Game.Domain
         public MongoUserRepository(IMongoDatabase database)
         {
             userCollection = database.GetCollection<UserEntity>(CollectionName);
+            userCollection.Indexes.CreateOne(
+                new CreateIndexModel<UserEntity>(
+                    Builders<UserEntity>.IndexKeys.Ascending(u => u.Login),
+                    new CreateIndexOptions { Unique = true }));
         }
 
         public UserEntity Insert(UserEntity user)
         {
-            //TODO: Ищи в документации InsertXXX.
-            throw new NotImplementedException();
+            var id = user.Id == Guid.Empty ? Guid.NewGuid() : user.Id;
+            var newUser = new UserEntity(id, user.Login, user.LastName, user.FirstName, user.GamesPlayed, user.CurrentGameId);
+            userCollection.InsertOne(newUser);
+            return newUser;
         }
 
         public UserEntity FindById(Guid id)
         {
-            //TODO: Ищи в документации FindXXX
-            throw new NotImplementedException();
+            return userCollection.Find(u => u.Id == id).FirstOrDefault();
         }
 
         public UserEntity GetOrCreateByLogin(string login)
         {
-            //TODO: Это Find или Insert
-            throw new NotImplementedException();
+            var user = userCollection.Find(u => u.Login == login).FirstOrDefault();
+            if (user != null)
+                return user;
+            try
+            {
+                return Insert(new UserEntity(Guid.NewGuid(), login, "", "", 0, null));
+            }
+            catch (MongoWriteException e) when (e.WriteError?.Category == ServerErrorCategory.DuplicateKey)
+            {
+                // Другой поток/процесс успел создать пользователя с таким логином.
+                // Возвращаем его (уникальный индекс гарантирует, что он там есть).
+                return userCollection.Find(u => u.Login == login).Single();
+            }
         }
 
         public void Update(UserEntity user)
         {
-            //TODO: Ищи в документации ReplaceXXX
-            throw new NotImplementedException();
+            userCollection.ReplaceOne(u => u.Id == user.Id, user);
         }
 
         public void Delete(Guid id)
         {
-            throw new NotImplementedException();
+            userCollection.DeleteOne(u => u.Id == id);
         }
 
         // Для вывода списка всех пользователей (упорядоченных по логину)
         // страницы нумеруются с единицы
         public PageList<UserEntity> GetPage(int pageNumber, int pageSize)
         {
-            //TODO: Тебе понадобятся SortBy, Skip и Limit
-            throw new NotImplementedException();
+            var totalCount = userCollection.CountDocuments(FilterDefinition<UserEntity>.Empty);
+            var items = userCollection
+                .Find(FilterDefinition<UserEntity>.Empty)
+                .SortBy(u => u.Login)
+                .Skip((pageNumber - 1) * pageSize)
+                .Limit(pageSize)
+                .ToList();
+            return new PageList<UserEntity>(items, totalCount, pageNumber, pageSize);
         }
 
         // Не нужно реализовывать этот метод
