@@ -38,11 +38,19 @@ namespace Game.Domain
 
         public UserEntity GetOrCreateByLogin(string login)
         {
-            var user = userCollection.Find(u => u.Login == login).FirstOrDefault();
-            if (user != null)
-                return user;
-
-            return Insert(new UserEntity { Login = login });
+            // 1. Сразу пробуем вставить (оптимизация для случая "пользователя нет")
+            var newUser = new UserEntity(Guid.NewGuid(), login, "", "", 0, null);
+            try
+            {
+                userCollection.InsertOne(newUser);
+                return newUser;
+            }
+            catch (MongoWriteException ex) when (ex.WriteError?.Category == ServerErrorCategory.DuplicateKey)
+            {
+                // 2. Если пользователь уже был — читаем его
+                var filter = Builders<UserEntity>.Filter.Eq(u => u.Login, login);
+                return userCollection.Find(filter).FirstOrDefault();
+            }
         }
 
         public void Update(UserEntity user)

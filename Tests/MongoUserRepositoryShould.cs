@@ -134,6 +134,21 @@ namespace Tests
             };
             action.Should().Throw<MongoWriteException>();
         }
+        
+        [Test]
+        [Explicit]
+        public void Scratch_Timing()
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            for (int i = 0; i < 1000; i++)
+                repo.Insert(new UserEntity { Login = "a" + i });
+            Console.WriteLine($"1000 inserts: {sw.ElapsedMilliseconds} ms");
+
+            sw.Restart();
+            for (int i = 0; i < 1000; i++)
+                repo.FindById(Guid.NewGuid());
+            Console.WriteLine($"1000 finds: {sw.ElapsedMilliseconds} ms");
+        }
 
         [Test(Description = "Параллельные запросы не должны падать")]
         [Explicit("Наивная реализация GetOrCreateByLogin не пройдет этот тест")]
@@ -143,7 +158,7 @@ namespace Tests
             {
                 var login = "login" + i;
                 Task.WaitAll(
-                    Task.Run(() => repo.GetOrCreateByLogin(login)),
+                     Task.Run(() => repo.GetOrCreateByLogin(login)),
                     Task.Run(() => repo.GetOrCreateByLogin(login)));
             }
         }
